@@ -1,0 +1,226 @@
+@{
+    ViewData["Title"] = "Action History";
+}
+
+@section Styles {
+<style>
+    body { background-color: #f0f2f5; }
+    .filter-card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 1.5rem;
+    }
+    
+    /* --- CSS cho Timeline --- */
+    .timeline-container {
+        position: relative;
+        padding-left: 50px;
+        margin-top: 2rem;
+    }
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        left: 20px;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+        animation: fadeIn 0.5s ease-out;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -39px;
+        top: 5px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background-color: #fff;
+        border: 4px solid #0d6efd;
+    }
+    .timeline-content {
+        background-color: #fff;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .new-item-highlight {
+        animation: highlightFade 2s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @@keyframes highlightFade {
+        0% { background-color: #fff3cd; }
+        100% { background-color: #fff; }
+    }
+
+    .timeline-time {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    .timeline-title {
+        display: flex;
+        align-items: center;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+    .timeline-title i {
+        margin-right: 10px;
+        color: #495057;
+    }
+</style>
+}
+
+<h1 class="display-4">Lịch sử Hành động</h1>
+<p>Dòng thời gian ghi lại các thao tác điều khiển thiết bị.</p>
+
+<div class="filter-card mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="device-name-search" class="form-label"><i class="fas fa-search me-2"></i>Tìm theo tên thiết bị</label>
+            <input type="text" id="device-name-search" class="form-control" placeholder="ví dụ: fan, light..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">&nbsp;</label>
+            <button id="search-btn" class="btn btn-primary w-100">Tìm</button>
+        </div>
+    </div>
+</div>
+
+<div class="timeline-container" id="history-timeline">
+    </div>
+
+<nav class="mt-4">
+    <ul class="pagination justify-content-center" id="pagination-controls"></ul>
+</nav>
+
+@section Scripts {
+<script>
+    const searchInput = document.getElementById('device-name-search');
+    const searchButton = document.getElementById('search-btn');
+    const paginationControls = document.getElementById('pagination-controls');
+    const timelineContainer = document.getElementById('history-timeline');
+    let currentPage = 1;
+
+    function getDeviceIcon(deviceName) {
+        const name = deviceName.toLowerCase();
+        if (name.includes('fan')) return 'fa-solid fa-fan text-info';
+        if (name.includes('light') || name.includes('bulb')) return 'fa-solid fa-lightbulb text-warning';
+        if (name.includes('ac')) return 'fa-solid fa-snowflake text-primary';
+        return 'fa-solid fa-toggle-on';
+    }
+
+    const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
+
+    connection.on("ReceiveActionHistory", function (record) {
+        if (currentPage === 1 && !searchInput.value) {
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            
+            const actionText = record.isOn ? '<span class="badge bg-success">Bật</span>' : '<span class="badge bg-danger">Tắt</span>';
+            const iconClass = getDeviceIcon(record.deviceName);
+
+            item.innerHTML = `<div class="timeline-content new-item-highlight">
+                                  <div class="timeline-time">${new Date(record.timestamp).toLocaleString('vi-VN')}</div>
+                                  <h5 class="timeline-title"><i class="${iconClass}"></i> ${record.deviceName} - ${actionText}</h5>
+                              </div>`;
+            timelineContainer.prepend(item);
+        }
+    });
+
+    async function loadHistoryData(page = 1) {
+        currentPage = page;
+        try {
+            const params = new URLSearchParams({ 'pageNumber': currentPage, 'pageSize': 15 });
+            if (searchInput.value) params.append('deviceName', searchInput.value);
+
+            const response = await fetch(`/api/IotApi/actionhistory?${params.toString()}`);
+            if (!response.ok) throw new Error("Network response not ok");
+            const paginatedResponse = await response.json();
+
+            timelineContainer.innerHTML = '';
+            paginatedResponse.data.forEach(record => {
+                const actionText = record.isOn ? '<span class="badge bg-success">Bật</span>' : '<span class="badge bg-danger">Tắt</span>';
+                const iconClass = getDeviceIcon(record.deviceName);
+                const item = `<div class="timeline-item">
+                                <div class="timeline-content">
+                                    <div class="timeline-time">${new Date(record.timestamp).toLocaleString('vi-VN')}</div>
+                                    <h5 class="timeline-title"><i class="${iconClass}"></i> ${record.deviceName} - ${actionText}</h5>
+                                </div>
+                              </div>`;
+                timelineContainer.innerHTML += item;
+            });
+            renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
+        } catch (error) {
+            console.error("Lỗi khi tải lịch sử:", error);
+            timelineContainer.innerHTML = '<p class="text-center text-danger">Không thể tải dữ liệu.</p>';
+        }
+    }
+    
+    function renderPagination(totalPages, currentPage) {
+        paginationControls.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const pageToShow = 5;
+        let startPage, endPage;
+
+        if (totalPages <= pageToShow + 2) {
+            startPage = 1;
+            endPage = totalPages;
+        } else {
+            if (currentPage <= Math.ceil(pageToShow / 2)) {
+                startPage = 1;
+                endPage = pageToShow;
+            } else if (currentPage + Math.floor(pageToShow / 2) >= totalPages) {
+                startPage = totalPages - pageToShow + 1;
+                endPage = totalPages;
+            } else {
+                startPage = currentPage - Math.floor(pageToShow / 2);
+                endPage = currentPage + Math.floor(pageToShow / 2);
+            }
+        }
+
+        let html = '';
+        // SỬA LỖI: Tất cả các lần gọi hàm phải là "loadHistoryData"
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${currentPage - 1})">Previous</a></li>`;
+        if (startPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(1)">1</a></li>`;
+            if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${i})">${i}</a></li>`;
+        }
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${totalPages})">${totalPages}</a></li>`;
+        }
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${currentPage + 1})">Next</a></li>`;
+        paginationControls.innerHTML = html;
+    }
+
+    searchButton.addEventListener('click', () => loadHistoryData(1));
+    searchInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') loadHistoryData(1); });
+    
+    async function start() {
+        try {
+            await connection.start();
+            console.log("SignalR Connected for History page.");
+            await loadHistoryData(1);
+        } catch (err) {
+            console.error(err);
+            setTimeout(start, 5000);
+        }
+    };
+    start();
+</script>
+}

@@ -1,0 +1,341 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@section Styles {
+<style>
+    body {
+        background-color: #f4f7f6;
+    }
+
+    .dashboard-card {
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 1.5rem;
+        height: 110%;
+        transition: transform 0.2s ease-in-out;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-4px);
+    }
+    
+    .status-card {
+        display: flex;
+        align-items: center;
+    }
+    .status-card .icon {
+        font-size: 2rem;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    .status-card .icon.temp { background-color: #ffe8e8; color: #dc3545; }
+    .status-card .icon.hum { background-color: #e2f1ff; color: #0d6efd; }
+    .status-card .icon.light { background-color: #fff6e0; color: #ffc107; }
+
+    .status-card .info h6 {
+        margin-bottom: 0.25rem;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .status-card .info .value {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    /* Thẻ điều khiển (Quạt, Đèn...) */
+    .control-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .control-card .info {
+        display: flex;
+        align-items: center;
+    }
+    .control-card .icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        color: #495057;
+    }
+    .control-card h5 {
+        margin-bottom: 0;
+    }
+    .control-card .status {
+        font-size: 0.8rem;
+    }
+
+    /* Tùy chỉnh công tắc gạt */
+    .form-switch .form-check-input {
+        width: 3.5em;
+        height: 1.75em;
+        cursor: pointer;
+    }
+</style>
+}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="dashboard-card">
+                <h5>Lịch sử Cảm biến</h5>
+                <canvas id="sensorChart" style="max-height: 400px;"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="dashboard-card status-card">
+                        <div class="icon temp"><i class="fas fa-thermometer-half"></i></div>
+                        <div class="info">
+                            <h6>NHIỆT ĐỘ</h6>
+                            <span class="value" id="temp-value">-- °C</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mb-4">
+                    <div class="dashboard-card status-card">
+                        <div class="icon hum"><i class="fas fa-tint"></i></div>
+                        <div class="info">
+                            <h6>ĐỘ ẨM</h6>
+                            <span class="value" id="hum-value">-- %</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mb-4">
+                    <div class="dashboard-card status-card">
+                        <div class="icon light"><i class="fas fa-sun"></i></div>
+                        <div class="info">
+                            <h6>ÁNH SÁNG</h6>
+                            <span class="value" id="light-value">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="dashboard-card">
+                        <h5 class="mb-3">Bảng Điều Khiển</h5>
+                        <div class="control-card mb-3">
+                            <div class="info">
+                                <span class="icon">💨</span>
+                                <div>
+                                    <h5>Quạt</h5>
+                                    <span class="status" id="fan-status">Đang tải...</span>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="fan-toggle">
+                            </div>
+                        </div>
+                        <div class="control-card mb-3">
+                            <div class="info">
+                                <span class="icon">💡</span>
+                                <div>
+                                    <h5>Đèn</h5>
+                                    <span class="status" id="light-status">Đang tải...</span>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="light-toggle">
+                            </div>
+                        </div>
+                        <div class="control-card">
+                            <div class="info">
+                                <span class="icon">❄️</span>
+                                <div>
+                                    <h5>Điều hòa</h5>
+                                    <span class="status" id="ac-status">Đang tải...</span>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="ac-toggle">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+    /* global Chart */
+    let sensorChart;
+
+    async function updateLatestData() {
+        try {
+            const response = await fetch('/api/IotApi/sensordata/latest');
+            if (!response.ok) return;
+            const data = await response.json();
+
+            document.getElementById('temp-value').innerText = data.temperature.toFixed(1) + ' °C';
+            document.getElementById('hum-value').innerText = data.humidity.toFixed(1) + ' %';
+            document.getElementById('light-value').innerText = data.light;
+        } catch (error) {
+            console.error('Error fetching latest data', error);
+        }
+    }
+    async function updateChart() {
+        try {
+            const response = await fetch('/api/IotApi/sensordata/history');
+            if (!response.ok) return;
+            const historyData = await response.json();
+
+            const labels = historyData.map(d => new Date(d.timestamp).toLocaleTimeString('vi-VN'));
+            const tempData = historyData.map(d => d.temperature);
+            const humidityData = historyData.map(d => d.humidity);
+            const lightData = historyData.map(d => d.light);
+
+            const chartData = {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Nhiệt độ (°C)',
+                        data: tempData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        yAxisID: 'y', // Gán vào trục Y chính (bên trái)
+                        tension: 0.3,
+                        fill: false
+                    },
+                    {
+                        label: 'Độ ẩm (%)',
+                        data: humidityData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        yAxisID: 'y', // Gán vào trục Y chính (bên trái)
+                        tension: 0.3,
+                        fill: false
+                    },
+                    {
+                        label: 'Ánh sáng',
+                        data: lightData,
+                        borderColor: 'rgb(255, 206, 86)',
+                        yAxisID: 'y1', // Gán vào trục Y phụ (bên phải)
+                        tension: 0.3,
+                        fill: false
+                    }
+                ]
+            };
+
+            // Cấu hình options mới cho biểu đồ
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: { // Cấu hình trục Y chính (bên trái)
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Nhiệt độ & Độ ẩm'
+                        }
+                    },
+                    y1: { // Cấu hình trục Y phụ (bên phải)
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Ánh sáng'
+                        },
+                        // Đảm bảo lưới của trục này không chồng chéo lên trục chính
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            };
+
+            if (!sensorChart) {
+                const canvas = document.getElementById('sensorChart');
+                const ctx = canvas.getContext('2d');
+                sensorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: chartOptions // Sử dụng options mới
+                });
+            } else {
+                sensorChart.data = chartData;
+                sensorChart.options = chartOptions; // Cập nhật cả options
+                sensorChart.update();
+            }
+        } catch (error) {
+            console.log("Error updating chart:", error);
+        }
+    }
+
+    // --- CÁC HÀM ĐIỀU KHIỂN THIẾT BỊ (ĐÃ SỬA LẠI) ---
+    
+    async function toggleDevice(deviceName) {
+        try {
+            const response = await fetch(`/api/IotApi/devices/${deviceName}/toggle`, { method: 'POST' });
+            if (response.ok) {
+                console.log(`Toggled ${deviceName} successfully.`);
+                // Cập nhật lại trạng thái ngay lập tức thay vì đợi 10 giây
+                await updateDeviceStates(); 
+            }
+        } catch (error) {
+            console.error(`Error toggling ${deviceName}:`, error);
+        }
+    }
+
+    async function updateDeviceStates() {
+        try {
+            const response = await fetch('/api/IotApi/devicestates');
+            const devices = await response.json();
+
+            devices.forEach(deviceState => {
+                const statusElement = document.getElementById(`${deviceState.deviceName.toLowerCase()}-status`);
+                // SỬA: Lấy phần tử input của công tắc
+                const toggleElement = document.getElementById(`${deviceState.deviceName.toLowerCase()}-toggle`);
+
+                if (statusElement && toggleElement) {
+                    if (deviceState.isOn) {
+                        statusElement.innerText = 'Đang Bật';
+                        statusElement.className = 'status fw-bold text-success';
+                    } else {
+                        statusElement.innerText = 'Đang Tắt';
+                        statusElement.className = 'status fw-bold text-secondary';
+                    }
+                    // SỬA: Cập nhật trạng thái "checked" của công tắc
+                    toggleElement.checked = deviceState.isOn;
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching device states:", error);
+        }
+    }
+
+    // --- HÀM TỔNG HỢP VÀ GÁN SỰ KIỆN ---
+
+    function updateDashboard() {
+        updateLatestData();
+        updateChart();
+        updateDeviceStates();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+
+        document.getElementById('fan-toggle').addEventListener('change', () => toggleDevice('fan'));
+        document.getElementById('light-toggle').addEventListener('change', () => toggleDevice('light'));
+        document.getElementById('ac-toggle').addEventListener('change', () => toggleDevice('ac'));
+
+        updateDashboard();
+        setInterval(updateDashboard, 10000);
+    });
+</script>
+}
