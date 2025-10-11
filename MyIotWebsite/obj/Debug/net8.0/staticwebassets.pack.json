@@ -9,12 +9,28 @@
       "PackagePath": "staticwebassets/css/site.css"
     },
     {
-      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/documents/Báo_Cáo_BÀI_03_HoangMinhTuan.pdf",
-      "PackagePath": "staticwebassets/documents/Báo_Cáo_BÀI_03_HoangMinhTuan.pdf"
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/documents/Báo_Cáo_BÀI_03_HoangMinhTuan.pdf",
+      "PackagePath": "staticwebassets/documents/Báo_Cáo_BÀI_03_HoangMinhTuan.pdf"
     },
     {
       "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/favicon.ico",
       "PackagePath": "staticwebassets/favicon.ico"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/icons/Aspnet SVG Icon.svg",
+      "PackagePath": "staticwebassets/icons/Aspnet SVG Icon.svg"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/icons/Esp 32.svg",
+      "PackagePath": "staticwebassets/icons/Esp 32.svg"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/icons/Gravatar SVG Icon.svg",
+      "PackagePath": "staticwebassets/icons/Gravatar SVG Icon.svg"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/icons/MQTT Horizontal Neg.svg",
+      "PackagePath": "staticwebassets/icons/MQTT Horizontal Neg.svg"
     },
     {
       "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/js/site.js",
@@ -247,6 +263,10 @@
     {
       "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/lib/jquery/dist/jquery.min.map",
       "PackagePath": "staticwebassets/lib/jquery/dist/jquery.min.map"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/videos/background-video.mp4",
+      "PackagePath": "staticwebassets/videos/background-video.mp4"
     },
     {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.MyIotWebsite.Microsoft.AspNetCore.StaticWebAssets.props",

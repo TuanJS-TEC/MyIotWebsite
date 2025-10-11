@@ -4,22 +4,46 @@
 
 @section Styles {
 <style>
+    /* --- CSS CHO VIDEO BACKGROUND --- */
+    .video-background-container {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100vh;
+        overflow: hidden; z-index: -2;
+    }
+    #bg-video {
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+    .video-overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        z-index: -1;
+    }
     body {
-        background-color: #f4f7f6;
+        background-color: transparent;
     }
 
     .dashboard-card {
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        background-color: rgba(255, 255, 255, 0.2); /* Nền trắng trong suốt */
+        backdrop-filter: blur(15px); /* Hiệu ứng kính mờ */
+        border: 1px solid rgba(255, 255, 255, 0.3); /* Viền mờ */
+        border-radius: 15px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         padding: 1.5rem;
-        height: 110%;
+        height: 100%;
+        color: #fff; 
         transition: transform 0.2s ease-in-out;
     }
     .dashboard-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-5px);
     }
     
+    .dashboard-card h5 {
+        color: #000B58; /* Màu cho tiêu đề trong thẻ */
+    }
+
+    /* Thẻ thông số (Nhiệt độ, Độ ẩm...) */
     .status-card {
         display: flex;
         align-items: center;
@@ -34,18 +58,19 @@
         justify-content: center;
         margin-right: 1rem;
     }
-    .status-card .icon.temp { background-color: #ffe8e8; color: #dc3545; }
-    .status-card .icon.hum { background-color: #e2f1ff; color: #0d6efd; }
-    .status-card .icon.light { background-color: #fff6e0; color: #ffc107; }
+    .status-card .icon.temp { background-color: rgba(220, 53, 69, 0.7); color: #ff8fa3; }
+    .status-card .icon.hum { background-color: rgba(13, 110, 253, 0.7); color: #7afcff; }
+    .status-card .icon.light { background-color: rgba(255, 193, 7, 0.7); color: #fff3b0; }
 
     .status-card .info h6 {
         margin-bottom: 0.25rem;
-        color: #6c757d;
+        color: #000B58; /* Màu chữ phụ */
         font-size: 0.9rem;
     }
     .status-card .info .value {
         font-size: 1.5rem;
         font-weight: 600;
+        color: #000B58;
     }
 
     /* Thẻ điều khiển (Quạt, Đèn...) */
@@ -61,13 +86,17 @@
     .control-card .icon {
         font-size: 1.5rem;
         margin-right: 1rem;
-        color: #495057;
     }
-    .control-card h5 {
-        margin-bottom: 0;
-    }
+    
     .control-card .status {
         font-size: 0.8rem;
+        color: #000B58;
+    }
+    .control-card .status.text-success {
+        color: #000B58 !important;
+    }
+    .control-card .status.text-secondary {
+        color: #000B58 !important;
     }
 
     /* Tùy chỉnh công tắc gạt */
@@ -76,15 +105,65 @@
         height: 1.75em;
         cursor: pointer;
     }
+    .control-card.pending .form-switch {
+        opacity: 0.5;
+        pointer-events: none;
+        animation: pulse 1.5s infinite;
+    }
+
+    @@keyframes pulse {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; }
+    }
+    
+    /* Cập nhật màu cho biểu đồ để dễ nhìn trên nền tối */
+    #sensorChart {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 10px;
+    }
 </style>
 }
+
+<div class="video-background-container">
+    <div class="video-overlay"></div>
+    <video playsinline autoplay muted loop id="bg-video">
+        <source src="~/videos/background-video.mp4" type="video/mp4">
+        Trình duyệt của bạn không hỗ trợ video.
+    </video>
+</div>
+
 
 <div class="container-fluid py-4">
     <div class="row">
         <div class="col-lg-8 mb-4">
-            <div class="dashboard-card">
-                <h5>Lịch sử Cảm biến</h5>
-                <canvas id="sensorChart" style="max-height: 400px;"></canvas>
+            <div class="dashboard-card d-flex flex-column">
+    
+                <div class="flex-grow-1">
+                    <h5 class="d-flex align-items-center mb-3">
+                        <i class="fas fa-chart-line me-2"></i> Dash Board
+                    </h5>
+                    <canvas id="sensorChart" style="max-height: 400px;"></canvas>
+                </div>
+
+                <hr class="my-3">
+                <div class="tech-footer text-center">
+                    <div class="d-flex justify-content-around align-items-center">
+                        <a href="https://dotnet.microsoft.com/apps/aspnet" target="_blank" title="ASP.NET Core">
+                            <img src="~/icons/Aspnet SVG Icon.svg" alt="ASP.NET Core" height="50">
+                        </a>
+                        <a href="https://mqtt.org/" target="_blank" title="MQTT">
+                            <img src="~/icons/MQTT Horizontal Neg.svg" alt="MQTT" height="50">
+                        </a>
+                        <a href="https://www.espressif.com/en/products/socs/esp32" target="_blank" title="ESP32">
+                            <img src="~/icons/Esp 32.svg" alt="ESP32" height="30" style="border-radius: 7px;">
+                        </a>
+                        <a href="https://en.gravatar.com/" target="_blank" title="Gravatar">
+                            <img src="~/icons/Gravatar SVG Icon.svg" alt="Gravatar" height="50">
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -113,7 +192,7 @@
                         <div class="icon light"><i class="fas fa-sun"></i></div>
                         <div class="info">
                             <h6>ÁNH SÁNG</h6>
-                            <span class="value" id="light-value">--</span>
+                            <span class="value" id="light-value">-- %</span>
                         </div>
                     </div>
                 </div>
@@ -169,8 +248,8 @@
 
 @section Scripts {
 <script>
-    /* global Chart */
     let sensorChart;
+    const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
 
     async function updateLatestData() {
         try {
@@ -178,11 +257,17 @@
             if (!response.ok) return;
             const data = await response.json();
 
-            document.getElementById('temp-value').innerText = data.temperature.toFixed(1) + ' °C';
-            document.getElementById('hum-value').innerText = data.humidity.toFixed(1) + ' %';
-            document.getElementById('light-value').innerText = data.light;
+            if (data && data.temperature != null) {
+                document.getElementById('temp-value').innerText = data.temperature.toFixed(1) + ' °C';
+            }
+            if (data && data.humidity != null) {
+                document.getElementById('hum-value').innerText = data.humidity.toFixed(1) + ' %';
+            }
+            if (data && data.light != null) {
+                document.getElementById('light-value').innerText = data.light;
+            }
         } catch (error) {
-            console.error('Error fetching latest data', error);
+            console.error('Error fetching latest data:', error);
         }
     }
     async function updateChart() {
@@ -196,37 +281,35 @@
             const humidityData = historyData.map(d => d.humidity);
             const lightData = historyData.map(d => d.light);
 
+            const textColor = '#000B58'; // Màu xanh dương đậm
+
             const chartData = {
                 labels: labels,
                 datasets: [
                     {
                         label: 'Nhiệt độ (°C)',
                         data: tempData,
-                        borderColor: 'rgb(255, 99, 132)',
-                        yAxisID: 'y', // Gán vào trục Y chính (bên trái)
-                        tension: 0.3,
-                        fill: false
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        yAxisID: 'yTemp', // Gán vào trục Nhiệt độ
+                        tension: 0.4
                     },
                     {
                         label: 'Độ ẩm (%)',
                         data: humidityData,
-                        borderColor: 'rgb(54, 162, 235)',
-                        yAxisID: 'y', // Gán vào trục Y chính (bên trái)
-                        tension: 0.3,
-                        fill: false
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        yAxisID: 'yHum', // Gán vào trục Độ ẩm
+                        tension: 0.4
                     },
                     {
-                        label: 'Ánh sáng',
+                        label:  'Ánh sáng (%)',
                         data: lightData,
-                        borderColor: 'rgb(255, 206, 86)',
-                        yAxisID: 'y1', // Gán vào trục Y phụ (bên phải)
-                        tension: 0.3,
-                        fill: false
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        yAxisID: 'yLight', // Gán vào trục Ánh sáng
+                        tension: 0.4
                     }
                 ]
             };
 
-            // Cấu hình options mới cho biểu đồ
             const chartOptions = {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -234,28 +317,42 @@
                     mode: 'index',
                     intersect: false,
                 },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: textColor, // Đổi màu chú thích
+                            font: { size: 14 }
+                        }
+                    }
+                },
                 scales: {
-                    y: { // Cấu hình trục Y chính (bên trái)
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { color: 'rgba(0, 11, 88, 0.1)' }
+                    },
+                    yTemp: {
                         type: 'linear',
                         display: true,
                         position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Nhiệt độ & Độ ẩm'
-                        }
+                        title: { display: true, text: 'Nhiệt độ (°C)', color: 'rgb(255, 99, 132)' },
+                        ticks: { color: 'rgb(255, 99, 132)' }
                     },
-                    y1: { // Cấu hình trục Y phụ (bên phải)
+                    yHum: {
                         type: 'linear',
                         display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Ánh sáng'
-                        },
-                        // Đảm bảo lưới của trục này không chồng chéo lên trục chính
-                        grid: {
-                            drawOnChartArea: false,
-                        },
+                        position: 'left', // Đặt cùng bên trái với Nhiệt độ
+                        title: { display: true, text: 'Độ ẩm (%)', color: 'rgb(54, 162, 235)' },
+                        ticks: { color: 'rgb(54, 162, 235)' },
+                        grid: { drawOnChartArea: false } // Ẩn lưới để không bị rối
+                    },
+                    yLight: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right', // Đặt trục Ánh sáng ở bên phải
+                        title: { display: true, text: 'Ánh sáng', color: 'rgb(255, 206, 86)' },
+                        ticks: { color: 'rgb(255, 206, 86)' },
+                        grid: { drawOnChartArea: false }
                     }
                 }
             };
@@ -266,11 +363,11 @@
                 sensorChart = new Chart(ctx, {
                     type: 'line',
                     data: chartData,
-                    options: chartOptions // Sử dụng options mới
+                    options: chartOptions
                 });
             } else {
                 sensorChart.data = chartData;
-                sensorChart.options = chartOptions; // Cập nhật cả options
+                sensorChart.options = chartOptions;
                 sensorChart.update();
             }
         } catch (error) {
@@ -278,30 +375,41 @@
         }
     }
 
-    // --- CÁC HÀM ĐIỀU KHIỂN THIẾT BỊ (ĐÃ SỬA LẠI) ---
+
+    // --- CÁC HÀM ĐIỀU KHIỂN THIẾT BỊ ---
     
+   connection.on("ReceiveActionHistory", function (newAction){
+       console.log("Received action confirmation:", newAction);
+       updateDeviceStates();
+   })
+
+    // Hàm này gửi lệnh đi
     async function toggleDevice(deviceName) {
+        const cardElement = document.getElementById(`${deviceName}-toggle`).closest('.control-card');
+
+        cardElement.classList.add('pending');
+
         try {
-            const response = await fetch(`/api/IotApi/devices/${deviceName}/toggle`, { method: 'POST' });
-            if (response.ok) {
-                console.log(`Toggled ${deviceName} successfully.`);
-                // Cập nhật lại trạng thái ngay lập tức thay vì đợi 10 giây
-                await updateDeviceStates(); 
-            }
+            await fetch(`/api/IotApi/devices/${deviceName}/toggle`, { method: 'POST' });
         } catch (error) {
             console.error(`Error toggling ${deviceName}:`, error);
+            cardElement.classList.remove('pending');
         }
     }
-
+    
     async function updateDeviceStates() {
         try {
             const response = await fetch('/api/IotApi/devicestates');
+            if (!response.ok) return;
             const devices = await response.json();
 
             devices.forEach(deviceState => {
-                const statusElement = document.getElementById(`${deviceState.deviceName.toLowerCase()}-status`);
-                // SỬA: Lấy phần tử input của công tắc
-                const toggleElement = document.getElementById(`${deviceState.deviceName.toLowerCase()}-toggle`);
+                const deviceName = deviceState.deviceName.toLowerCase();
+                const statusElement = document.getElementById(`${deviceName}-status`);
+                const toggleElement = document.getElementById(`${deviceName}-toggle`);
+                const cardElement = toggleElement.closest('.control-card');
+
+                cardElement.classList.remove('pending');
 
                 if (statusElement && toggleElement) {
                     if (deviceState.isOn) {
@@ -311,7 +419,6 @@
                         statusElement.innerText = 'Đang Tắt';
                         statusElement.className = 'status fw-bold text-secondary';
                     }
-                    // SỬA: Cập nhật trạng thái "checked" của công tắc
                     toggleElement.checked = deviceState.isOn;
                 }
             });
@@ -319,23 +426,46 @@
             console.error("Error fetching device states:", error);
         }
     }
-
+    
     // --- HÀM TỔNG HỢP VÀ GÁN SỰ KIỆN ---
-
     function updateDashboard() {
         updateLatestData();
         updateChart();
         updateDeviceStates();
     }
-
     document.addEventListener('DOMContentLoaded', function() {
-
         document.getElementById('fan-toggle').addEventListener('change', () => toggleDevice('fan'));
         document.getElementById('light-toggle').addEventListener('change', () => toggleDevice('light'));
         document.getElementById('ac-toggle').addEventListener('change', () => toggleDevice('ac'));
 
-        updateDashboard();
-        setInterval(updateDashboard, 10000);
+        connection.on("ReceiveActionHistory", function (newAction) {
+            console.log("Received action confirmation:", newAction);
+            updateDeviceStates(); 
+        });
+
+        connection.on("ReceiveSensorData", function (newData) {
+            updateLatestData();
+            updateChart();
+        });
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+
+                await Promise.all([
+                    updateLatestData(),
+                    updateChart(),
+                    updateDeviceStates()
+                ]);
+
+            } catch (err) {
+                console.error("SignalR connection error: ", err);
+                setTimeout(start, 5000);
+            }
+        }
+
+        start();
     });
 </script>
 }

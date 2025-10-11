@@ -12,7 +12,6 @@
 </head>
 <body>
 <script>
-        // Script này chạy ngay lập tức để áp dụng theme đã lưu trước khi trang render
         (function() {
             const theme = localStorage.getItem('theme');
             if (theme === 'dark') {
@@ -31,16 +30,24 @@
             <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1">
                     <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index" title="Home">
+                            <i class="fas fa-home"></i>
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SensorData">Sensor Data</a>
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="SensorData" title="Sensor Data">
+                            <i class="fas fa-chart-bar"></i>
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="History">History</a>
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="History" title="History">
+                            <i class="fas fa-history"></i>
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Profile">Profile</a>
+                        <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Profile" title="Profile">
+                            <i class="fas fa-user"></i>
+                        </a>
                     </li>
                 </ul>
                 <div class="d-flex align-items-center">

@@ -1,7 +1,7 @@
 @{
     ViewData["Title"] = "Profile";
-
-    // Logic để tạo URL Gravatar từ email
+    
+    // Logic Gravatar giữ nguyên
     var email = "HoangminhtuanJS@gmail.com";
     var gravatarHash = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(email.Trim().ToLower()));
     var gravatarUrl = $"https://www.gravatar.com/avatar/{Convert.ToHexString(gravatarHash).ToLower()}?s=200&d=mp";
@@ -9,123 +9,75 @@
 
 @section Styles {
 <style>
-    @@keyframes gradientAnimation {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+    /* --- PHẦN MỚI: CSS CHO VIDEO BACKGROUND --- */
+    .video-background-container {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100vh;
+        overflow: hidden; z-index: -2;
     }
+    #bg-video {
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+    .video-overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Tăng độ tối để chữ/card nổi bật hơn */
+        z-index: -1;
+    }
+    body { 
+        background-color: #121212; /* Màu nền dự phòng nếu video không tải được */
+    }
+
+    /* --- CÁC STYLE CŨ --- */
     .profile-page-wrapper {
         padding: 4rem 0;
-        background-color: #f5f7fa;
-        background-image: linear-gradient(to top left, #f5f7fa 0%, #c3cfe2 100%);
+        align-items: center;
         min-height: 90vh;
         display: flex;
-        align-items: center;
         justify-content: center;
     }
-
+    /* Các thẻ card giờ có nền trong suốt và hiệu ứng kính mờ */
     .profile-card, .tech-showcase {
-        background-color: rgba(255, 255, 255, 0.9); /* Thêm một chút trong suốt */
-        backdrop-filter: blur(10px); /* Hiệu ứng "kính mờ" (tùy chọn) */
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         padding: 2.5rem;
         height: 100%;
-    }
-
-    .profile-card {
-        text-align: center;
+        color: #134686; /* Chuyển màu chữ mặc định thành trắng */
     }
     
-    .avatar-container {
-        margin-top: -95px;
-        margin-bottom: 1.5rem;
-    }
-
     .profile-avatar {
         width: 130px;
         height: 130px;
         border-radius: 50%;
         object-fit: cover;
-        border: 5px solid #fff;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        background-color: white;
+        border: 5px solid rgb(0, 49, 97);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     }
     
-    .user-name { 
-        font-size: 1.8em; 
-        font-weight: 600; 
-    }
+    .user-title { color: #134686; }
+    .info-item a { color: #134686; }
+    .info-item i { color: #134686; }
+    .tech-showcase h2 { color: #134686; }
+    .tech-item h5 { color: #134686; }
+    .tech-item p { color: #134686; }
+    .tech-item i { color: #134686; }
     
-    .user-title { 
-        color: #6c757d; 
-        margin-bottom: 1.5rem; 
-    }
-    
-    .info-item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 0.75rem;
-        font-size: 0.95em;
-    }
-    
-    .info-item i { 
-        color: #0d6efd; 
-        width: 25px; 
-        margin-right: 10px; 
-    }
-    
-    .info-item a { 
-        color: #212529; 
-        text-decoration: none; 
-    }
-    
-    .info-item a:hover { 
-        text-decoration: underline; 
-    }
-
-    .tech-showcase h2 {
-        text-align: center;
-        margin-bottom: 2rem;
-        font-size: 1.5rem;
-        font-weight: 600;
-    }
-    
-    .tech-item { 
-        display: flex; 
-        align-items: center; 
-        margin-bottom: 1.25rem; 
-    }
-    
-    .tech-item i {
-        font-size: 1.8rem;
-        width: 45px;
-        text-align: center;
-        margin-right: 1rem;
-        color: #0d6efd;
-    }
-    
-    .tech-item h5 { 
-        font-size: 1rem; 
-        font-weight: 500;
-        margin-bottom: 0.25rem; 
-    }
-    
-    .tech-item p { 
-        margin-bottom: 0; 
-        font-size: 0.85rem; 
-        color: #6c757d; 
-    }
-    
-    /* Media query cho màn hình nhỏ hơn Large (992px) */
     @@media (max-width: 991.98px) {
-        .profile-card {
-            margin-bottom: 2rem;
-        }
+        .profile-card { margin-bottom: 2rem; }
     }
 </style>
 }
+
+<div class="video-background-container">
+    <div class="video-overlay"></div>
+    <video playsinline autoplay muted loop id="bg-video">
+        <source src="~/videos/background-video.mp4" type="video/mp4">
+    </video>
+</div>
 
 <div class="profile-page-wrapper">
     <div class="container">
@@ -159,13 +111,17 @@
                             <i class="fas fa-file-pdf"></i>
                             <a href="~/documents/Báo_Cáo_BÀI_03_HoangMinhTuan.pdf" target="_blank">Xem Báo cáo Tổng quan</a>
                         </div>
+                        <div class="info-item">
+                            <i class="fa-brands fa-figma"></i>
+                            <a href="https://www.figma.com/design/BStRxVvFzaC6VgW8OEgqry/IOT---Application?node-id=0-1&t=IM5r4mMtN2GZ8yef-1" target="_blank">Thiết kế Figma</a>
+                        </div>
                     </div>
                 </div>
             </div>
-
+            
             <div class="col-lg-7">
                 <div class="tech-showcase">
-                    <h2>Công nghệ Sử dụng</h2>
+                    <h2>Verwendete Technologien</h2>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="tech-item">
@@ -178,21 +134,21 @@
                             <div class="tech-item">
                                 <i class="fa-solid fa-database"></i>
                                 <div>
-                                    <h5>Cơ sở dữ liệu</h5>
+                                    <h5>Datenbank</h5>
                                     <p>PostgreSQL</p>
                                 </div>
                             </div>
                             <div class="tech-item">
                                 <i class="fa-solid fa-wifi"></i>
                                 <div>
-                                    <h5>Real-time</h5>
+                                    <h5>Echtzeit</h5>
                                     <p>SignalR</p>
                                 </div>
                             </div>
                             <div class="tech-item">
                                 <i class="fa-brands fa-bootstrap"></i>
                                 <div>
-                                    <h5>Giao diện</h5>
+                                    <h5>Benutzeroberfläche</h5>
                                     <p>Bootstrap 5</p>
                                 </div>
                             </div>
@@ -201,34 +157,44 @@
                             <div class="tech-item">
                                 <i class="fa-solid fa-code"></i>
                                 <div>
-                                    <h5>Ngôn ngữ</h5>
+                                    <h5>Programmiersprache</h5>
                                     <p>C# (C Sharp)</p>
                                 </div>
                             </div>
                             <div class="tech-item">
                                 <i class="fa-solid fa-right-left"></i>
                                 <div>
-                                    <h5>Giao thức IoT</h5>
+                                    <h5>IoT-Protokoll</h5>
                                     <p>MQTT</p>
                                 </div>
                             </div>
                             <div class="tech-item">
                                 <i class="fa-solid fa-chart-line"></i>
                                 <div>
-                                    <h5>Biểu đồ</h5>
+                                    <h5>Diagramm</h5>
                                     <p>Chart.js</p>
                                 </div>
                             </div>
                             <div class="tech-item">
                                 <i class="fa-solid fa-microchip"></i>
                                 <div>
-                                    <h5>Thiết bị IoT</h5>
+                                    <h5>IoT-Gerät</h5>
                                     <p>ESP32</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <div class="bio mt-4 p-3 rounded" style="background-color: rgba(255,255,255,0.05);">
+                <p style="font-size: 0.95rem; line-height: 1.6;">
+                    Hallo! Ich bin <strong>Hoàng Minh Tuấn</strong>. 
+                    Ich befinde mich derzeit im Lern- und Arbeitsprozess mit <strong>C#</strong>. 
+                    Diese Website wurde mit dem Ziel erstellt, das Lernen und das Verständnis von <strong>C#</strong> 
+                    sowie das Thema <strong>Internet of Things (IoT)</strong> zu vertiefen. 
+                    Ich beherrsche drei Fremdsprachen: <strong>Englisch, Deutsch und Chinesisch</strong>.
+                </p>
             </div>
             
         </div>

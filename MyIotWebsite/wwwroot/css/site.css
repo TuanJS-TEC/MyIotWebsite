@@ -36,3 +36,31 @@ body {
 main[role="main"] {
     flex-grow: 1;
 }
+
+.navbar {
+    /* 1. Đổi màu nền thành màu trắng có độ trong suốt */
+    background-color: rgba(255, 255, 255, 0.1) !important;
+
+    /* 2. Áp dụng hiệu ứng làm mờ */
+    backdrop-filter: blur(10px);
+
+    /* 3. Thêm một đường viền mỏng để navbar nổi bật hơn */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+/* * Sửa lại: Áp dụng flex-grow cho thẻ div.container là con trực tiếp của body.
+ * Đây là thẻ chứa @RenderBody() trong file _Layout.cshtml.
+*/
+body > .container {
+    flex-grow: 1;
+}

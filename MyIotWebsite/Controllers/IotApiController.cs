@@ -5,6 +5,8 @@ using MyIotWebsite.Data;
 using MyIotWebsite.Hubs;
 using MyIotWebsite.Models;
 using MyIotWebsite.Services;
+using System.Globalization;
+using System.Linq.Expressions;// Thêm using cho CultureInfo
 
 namespace MyIotWebsite.Controllers
 {
@@ -15,246 +17,305 @@ namespace MyIotWebsite.Controllers
         private readonly ApplicationDbContext _context;
         private readonly MqttClientService _mqttService;
         private readonly IWebHostEnvironment _env;
+        private readonly IHubContext<SensorHub> _hubContext;
 
-        public IotApiController(ApplicationDbContext context, MqttClientService mqttService)
+        // --- CONSTRUCTOR ĐÃ ĐƯỢC SỬA LỖI HOÀN CHỈNH ---
+        public IotApiController(
+            ApplicationDbContext context, 
+            MqttClientService mqttService, 
+            IWebHostEnvironment env,
+            IHubContext<SensorHub> hubContext) 
         {
             _context = context;
             _mqttService = mqttService;
-            _env = _env;
+            _env = env;
+            _hubContext = hubContext;
         }
 
         // --- API CHO SENSOR DATA ---
 
-        // GET: api/IotApi/sensordata/latest
         [HttpGet("sensordata/latest")]
         public async Task<ActionResult<SensorData>> GetLatestSensorData()
         {
-            var latestData = await _context.SensorData
-                                           .OrderByDescending(s => s.Timestamp)
-                                           .FirstOrDefaultAsync();
-
-            if (latestData == null)
-            {
-                return NotFound();
-            }
-
+            var latestData = await _context.SensorData.OrderByDescending(s => s.Timestamp).FirstOrDefaultAsync();
+            if (latestData == null) return NotFound();
             return Ok(latestData);
         }
 
-        // GET: api/IotApi/sensordata/history
         [HttpGet("sensordata/history")]
         public async Task<ActionResult<IEnumerable<SensorData>>> GetSensorDataHistory()
         {
-            var historyData = await _context.SensorData
-                .OrderByDescending(s => s.Timestamp)
-                .Take(30)
-                .ToListAsync();
-            
+            var historyData = await _context.SensorData.OrderByDescending(s => s.Timestamp).Take(30).ToListAsync();
             historyData.Reverse();
-            
             return Ok(historyData);
         }
         
-        // GET: api/IotApi/sensordata/all
         [HttpGet("sensordata/search")]
         public async Task<ActionResult<PaginatedResponse<SensorData>>> SearchAllSensors(
             [FromQuery] string? searchTerm,
             [FromQuery] string searchType = "smart",
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string sortBy = "timestamp",
+            [FromQuery] string sortOrder = "desc")
         {
+            // Bắt đầu truy vấn, chưa thực thi
             var query = _context.SensorData.AsQueryable();
 
+            // =================================================================
+            // Phần 1: Lọc dữ liệu (Filtering)
+            // =================================================================
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 if (searchType == "smart")
                 {
-                    // --- LOGIC CHO TÌM KIẾM "SMART" ---
-                    if (DateTime.TryParse(searchTerm, out var searchDate))
+                    string[] formats = {
+                        "d/M/yyyy HH:mm:ss", "d/M/yyyy HH:mm", "d/M/yy HH:mm:ss", "d/M/yy HH:mm",
+                        "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy", "d/M/yy", "d/M/yyyy", 
+                        "yyyy-MM-dd", "HH:mm:ss", "HH:mm"
+                    };
+
+                    if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                     {
-                        var startDate = searchDate.Date.ToUniversalTime();
-                        var endDate = startDate.AddDays(1);
-                        query = query.Where(s => s.Timestamp >= startDate && s.Timestamp < endDate);
-                    }
-                    else if (searchTerm.StartsWith(">") || searchTerm.StartsWith("<") || searchTerm.StartsWith("="))
-                    {
-                        var op = searchTerm.Substring(0, 1);
-                        if (double.TryParse(searchTerm.Substring(1), out var value))
+                        DateTime searchDate = !searchTerm.Contains('/') && !searchTerm.Contains('-') 
+                            ? DateTime.Today.Add(parsedDate.TimeOfDay) 
+                            : parsedDate;
+
+                        DateTime localSearchDate = DateTime.SpecifyKind(searchDate, DateTimeKind.Local);
+                
+                        DateTime startDateUtc, endDateUtc;
+                        var colonCount = searchTerm.Count(c => c == ':');
+
+                        if (colonCount == 2) // Tìm theo giây
                         {
-                            if (op == ">") query = query.Where(s => s.Temperature > value || s.Humidity > value || s.Light > value);
-                            else if (op == "<") query = query.Where(s => s.Temperature < value || s.Humidity < value || s.Light < value);
-                            else if (op == "=") query = query.Where(s => s.Temperature == value || s.Humidity == value || s.Light == value);
+                            startDateUtc = localSearchDate.ToUniversalTime();
+                            endDateUtc = startDateUtc.AddSeconds(1);
                         }
+                        else if (colonCount == 1) // Tìm theo phút
+                        {
+                            var searchMinuteUtc = localSearchDate.ToUniversalTime();
+                            startDateUtc = new DateTime(searchMinuteUtc.Year, searchMinuteUtc.Month, searchMinuteUtc.Day, 
+                                searchMinuteUtc.Hour, searchMinuteUtc.Minute, 0, DateTimeKind.Utc);
+                            endDateUtc = startDateUtc.AddMinutes(1);
+                        }
+                        else // Tìm theo ngày
+                        {
+                            var localStartDate = new DateTime(localSearchDate.Year, localSearchDate.Month, localSearchDate.Day, 0, 0, 0, DateTimeKind.Local);
+                            var localEndDate = localStartDate.AddDays(1);
+                            startDateUtc = localStartDate.ToUniversalTime();
+                            endDateUtc = localEndDate.ToUniversalTime();
+                        }
+
+                        query = query.Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc);
                     }
-                    else if (long.TryParse(searchTerm, out var numericValue))
+                    else
                     {
-                        double tolerance = 5; 
-                        query = query.Where(s => 
-                            // TÌM KIẾM THEO ID (khớp chính xác)
-                            s.Id == numericValue || 
-                    
-                            (s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance) ||
-                            (s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance) ||
-                            (s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance)
-                        );
+                        query = query.Where(s => false);
                     }
                 }
-                else 
+                else // Lọc theo thông số sensor
                 {
-                    // --- LOGIC CHO TÌM KIẾM THEO TỪNG LOẠI CỤ THỂ ---
-                    if (double.TryParse(searchTerm, out var numericValue)) 
+                    if (double.TryParse(searchTerm, NumberStyles.Any, CultureInfo.InvariantCulture, out var numericValue))
                     {
-                        double tolerance = 5;
+                        double epsilon = 0.05; 
                         switch (searchType)
                         {
-                            case "temperature":
-                                query = query.Where(s => s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance);
+                            case "temperature": 
+                                query = query.Where(s => Math.Abs(s.Temperature - numericValue) <= epsilon); 
                                 break;
-                            case "humidity":
-                                query = query.Where(s => s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance);
+                            case "humidity": 
+                                query = query.Where(s => Math.Abs(s.Humidity - numericValue) <= epsilon); 
                                 break;
-                            case "light":
-                                query = query.Where(s => s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance);
+                            case "light": 
+                                query = query.Where(s => s.Light == numericValue); 
+                                break;
+                            default: 
+                                query = query.Where(s => false); 
                                 break;
                         }
+                    }
+                    else
+                    {
+                        query = query.Where(s => false);
                     }
                 }
             }
 
-            query = query.OrderByDescending(s => s.Timestamp);
-    
-            // Logic phân trang (giữ nguyên)
-            var totalRecords = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
-            var pagedData = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+            // =================================================================
+            // Phần 2: Sắp xếp dữ liệu (Sorting)
+            // =================================================================
+            bool isAscending = sortOrder.ToLower() == "asc";
 
+            var sortedQuery = (sortBy.ToLower(), isAscending) switch
+            {
+                ("id", true) => query.OrderBy(s => s.Id),
+                ("id", false) => query.OrderByDescending(s => s.Id),
+                ("temperature", true) => query.OrderBy(s => s.Temperature),
+                ("temperature", false) => query.OrderByDescending(s => s.Temperature),
+                ("humidity", true) => query.OrderBy(s => s.Humidity),
+                ("humidity", false) => query.OrderByDescending(s => s.Humidity),
+                ("light", true) => query.OrderBy(s => s.Light),
+                ("light", false) => query.OrderByDescending(s => s.Light),
+                ("timestamp", true) => query.OrderBy(s => s.Timestamp),
+
+                _ => query.OrderByDescending(s => s.Timestamp) 
+            };
+    
+            // =================================================================
+            // Phần 3: Phân trang (Pagination)
+            // =================================================================
+    
+            // Đếm tổng số bản ghi TRƯỚC KHI phân trang
+            var totalRecords = await sortedQuery.CountAsync();
+
+            // Lấy dữ liệu cho trang hiện tại
+            var pagedData = await sortedQuery
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Tạo đối tượng phản hồi
             var response = new PaginatedResponse<SensorData>
             {
                 Data = pagedData,
                 PageNumber = pageNumber,
-                TotalPages = totalPages
+                TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
             };
-    
+
             return Ok(response);
         }
         
-        // --- API CHO THIẾT BỊ  ---
+        // --- API CHO THIẾT BỊ ---
 
-        // GET: api/IotApi/devicestates
         [HttpGet("devicestates")]
         public async Task<ActionResult<IEnumerable<ActionHistory>>> GetDeviceStates()
         {
-            var latestStates = await _context.ActionHistories
-                .GroupBy(h => h.DeviceName)
-                .Select(g => g.OrderByDescending(h => h.Timestamp).FirstOrDefault())
-                .ToListAsync();
-
+            var latestStates = await _context.ActionHistories.GroupBy(h => h.DeviceName).Select(g => g.OrderByDescending(h => h.Timestamp).FirstOrDefault()).ToListAsync();
             return Ok(latestStates);
         }
 
-        // POST: api/IotApi/devices/{deviceName}/toggle
         [HttpPost("devices/{deviceName}/toggle")]
         public async Task<IActionResult> ToggleDevice(string deviceName)
         {
-            if (string.IsNullOrEmpty(deviceName))
-            {
-                return BadRequest("Device name cannot be empty.");
-            }
+            if (string.IsNullOrEmpty(deviceName)) return BadRequest("Device name cannot be empty.");
 
             var lastState = await _context.ActionHistories
                 .Where(h => h.DeviceName.ToLower() == deviceName.ToLower())
-                .OrderByDescending(h => h.Timestamp)
-                .FirstOrDefaultAsync();
-
+                .OrderByDescending(h => h.Timestamp).FirstOrDefaultAsync();
+                
             bool currentStateIsOn = lastState?.IsOn ?? false;
-            
-            var newAction = new ActionHistory
-            {
-                DeviceName = deviceName,
-                IsOn = !currentStateIsOn,
-                Timestamp = DateTime.UtcNow
-            };
-
-            _context.ActionHistories.Add(newAction);
-            await _context.SaveChangesAsync(); 
 
             try
             {
                 string deviceControlName = deviceName.ToLower() == "light" ? "bulb" : deviceName.ToLower();
-
-                string payload = $"{deviceControlName}_{(newAction.IsOn ? "on" : "off")}";
-                
+                string payload = $"{deviceControlName}_{(!currentStateIsOn ? "on" : "off")}";
                 await _mqttService.PublishAsync("control/led", payload);
-                
-                Console.WriteLine($"Published MQTT message to 'control/led': {payload}");
+                return Accepted();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error publishing MQTT message: {ex.Message}");
+                return StatusCode(500, $"Error pub MQTT message: {ex.Message}");
             }
-
-            return Ok(newAction);
         }
         
-        // GET: api/IotApi/actionhistory
+        // --- API CHO LỊCH SỬ ---
+
         [HttpGet("actionhistory")]
         public async Task<ActionResult<PaginatedResponse<ActionHistory>>> GetActionHistory(
-            [FromQuery] string? deviceName,
+            [FromQuery] string? searchTerm,
+            [FromQuery] string deviceName = "all",
+            [FromQuery] string status = "all",
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10) 
+            [FromQuery] int pageSize = 10)
         {
             var query = _context.ActionHistories.AsQueryable();
 
-            if (!string.IsNullOrEmpty(deviceName))
+            if (deviceName != "all" && !string.IsNullOrEmpty(deviceName))
             {
-                query = query.Where(h => h.DeviceName.ToLower().Contains(deviceName.ToLower()));
+                query = query.Where(h => h.DeviceName.ToLower() == deviceName.ToLower());
+            }
+
+            if (status.ToLower() == "on")
+            {
+                query = query.Where(h => h.IsOn == true);
+            }
+            else if (status.ToLower() == "off")
+            {
+                query = query.Where(h => h.IsOn == false);
+            }
+    
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                string[] formats = {
+                    "d/M/yyyy HH:mm:ss", "d/M/yyyy HH:mm", "d/M/yyyy HH",
+                    "d/M/yy HH:mm:ss", "d/M/yy HH:mm",
+                    "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy",
+                    "d/M/yyyy", "yyyy-MM-dd", "HH:mm:ss", "HH:mm"
+                };
+        
+                if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+                {
+                    DateTime searchDate = !searchTerm.Contains("/") && !searchTerm.Contains("-") 
+                        ? DateTime.Today.Add(parsedDate.TimeOfDay) 
+                        : parsedDate;
+
+                    // Bước 1: Chỉ định thời gian nhập vào là giờ Local
+                    DateTime localSearchDate = DateTime.SpecifyKind(searchDate, DateTimeKind.Local);
+                    DateTime startDateUtc, endDateUtc;
+            
+                    var colonCount = searchTerm.Count(c => c == ':');
+
+                    if (colonCount == 2) // Tìm theo giây
+                    {
+                        startDateUtc = localSearchDate.ToUniversalTime();
+                        endDateUtc = startDateUtc.AddSeconds(1);
+                    }
+                    else if (colonCount == 1) // Tìm theo phút
+                    {
+                        var searchMinuteUtc = localSearchDate.ToUniversalTime();
+                        startDateUtc = new DateTime(searchMinuteUtc.Year, searchMinuteUtc.Month, searchMinuteUtc.Day,
+                            searchMinuteUtc.Hour, searchMinuteUtc.Minute, 0, DateTimeKind.Utc);
+                        endDateUtc = startDateUtc.AddMinutes(1);
+                    }
+                    else 
+                    {
+                        var localStartDate = new DateTime(localSearchDate.Year, localSearchDate.Month, localSearchDate.Day, 0, 0, 0, DateTimeKind.Local);
+                        var localEndDate = localStartDate.AddDays(1);
+
+                        startDateUtc = localStartDate.ToUniversalTime();
+                        endDateUtc = localEndDate.ToUniversalTime();
+                    }
+    
+                    query = query.Where(h => h.Timestamp >= startDateUtc && h.Timestamp < endDateUtc);
+                }
+                else if (long.TryParse(searchTerm, out var id))
+                {
+                    query = query.Where(h => h.Id == id);
+                }
+                else
+                {
+                    query = query.Where(h => false); 
+                }
             }
 
             query = query.OrderByDescending(h => h.Timestamp);
-    
+
             var totalRecords = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
-            var pagedData = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+            var pagedData = await query.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+    
+            if (!pagedData.Any() && !string.IsNullOrEmpty(searchTerm))
+            {
+                return NotFound("Không tìm thấy giá trị bạn mong muốn.");
+            }
 
             var response = new PaginatedResponse<ActionHistory>
             {
                 Data = pagedData,
                 PageNumber = pageNumber,
-                TotalPages = totalPages
+                TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
             };
-    
+
             return Ok(response);
-        }
-        
-        //Post: api/IotApi/profile/avatar
-        [HttpPost("profile/avatar")]
-        public async Task<IActionResult> UploadAvatar(IFormFile file)
-        {
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest("Avatar file cannot be empty.");
-            }
-            
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-            
-            var uploadPath = Path.Combine(_env.WebRootPath, "images");
-
-            if (!Directory.Exists(uploadPath))
-            {
-                Directory.CreateDirectory(uploadPath);
-            }
-            
-            var filePath = Path.Combine(uploadPath, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-            var publicPaht = $"/images/{fileName}";
-            return Ok(new { path = publicPaht });
         }
     }
 }

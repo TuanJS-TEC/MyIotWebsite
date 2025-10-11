@@ -240,3 +240,4 @@
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/ref/MyIotWebsite.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/MQTTnet.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/MQTTnet.Extensions.ManagedClient.dll
+/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.sourcelink.json

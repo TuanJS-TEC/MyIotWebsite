@@ -6,6 +6,7 @@ using MQTTnet.Extensions.ManagedClient;
 using MyIotWebsite.Data;
 using MyIotWebsite.Hubs;
 using MyIotWebsite.Models;
+using System.Text.Json;
 
 namespace MyIotWebsite.Services
 {
@@ -16,7 +17,7 @@ namespace MyIotWebsite.Services
         private IManagedMqttClient _mqttClient;
 
         // Thông tin MQTT Broker
-        private const string MqttServer = "192.168.0.112"; 
+        private const string MqttServer = "172.20.10.4"; 
         private const int MqttPort = 1883;
         private const string MqttUser = "HoangMinhTuan"; 
         private const string MqttPassword = "123";
@@ -42,9 +43,10 @@ namespace MyIotWebsite.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-           _mqttClient.SubscribeAsync("sensor/data").GetAwaiter().GetResult();
-           Console.WriteLine("MQTT client subscribed to sensor/data");
-           return Task.CompletedTask;
+            _mqttClient.SubscribeAsync("sensor/data").GetAwaiter().GetResult();
+            _mqttClient.SubscribeAsync("status/device").GetAwaiter().GetResult();
+            Console.WriteLine("MQTT client subscribed to sensor/data");
+            return Task.CompletedTask;
         }
 
         public async Task PublishAsync(string topic, string payload)
@@ -55,40 +57,74 @@ namespace MyIotWebsite.Services
                 .Build();
             await _mqttClient.EnqueueAsync(message);
         }
+
         private async Task OnMqttMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
+            var topic = e.ApplicationMessage.Topic;
             var payload = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
-            Console.WriteLine("Received MQTT message on topic '{0}': {1}", e.ApplicationMessage.Topic, payload);
+    
+            Console.WriteLine("Received message on topic '{0}': {1}", topic, payload);
 
-            var parts = payload.Split(',');
-            if (parts.Length == 3 && 
-                double.TryParse(parts[0], out double temp) &&
-                double.TryParse(parts[1], out double hum) &&
-                double.TryParse(parts[2], out double light))
+            using (var scope = _serviceProvider.CreateScope())
             {
-                // Sử dụng IServiceProvider để tạo một scope mới, lấy DbContext và lưu dữ liệu
-                using (var scope = _serviceProvider.CreateScope())
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<SensorHub>>();
+
+                if (topic == "sensor/data")
                 {
-                    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    
-                    var sensorData = new SensorData
+                    var parts = payload.Split(',');
+                    if (parts.Length == 3 &&
+                        double.TryParse(parts[0], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double temp) &&
+                        double.TryParse(parts[1], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double hum) &&
+                        double.TryParse(parts[2], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double light))
                     {
-                        Temperature = temp,
-                        Humidity = hum,
-                        Light = light,
-                        Timestamp = DateTime.UtcNow
-                    };
-
-                    dbContext.SensorData.Add(sensorData);
-                    await dbContext.SaveChangesAsync();
-                    
-                    await _hubContext.Clients.All.SendAsync("ReceiveSensorData", sensorData);
-                    Console.WriteLine("Successfully saved sensor data to database.");
+                        var sensorData = new SensorData
+                        {
+                            Temperature = temp,
+                            Humidity = hum,
+                            Light = light,
+                            Timestamp = DateTime.UtcNow
+                        };
+                
+                        dbContext.SensorData.Add(sensorData);
+                        await dbContext.SaveChangesAsync();
+                        await hubContext.Clients.All.SendAsync("ReceiveSensorData", sensorData);
+                
+                        Console.WriteLine("Sensor data saved to DB and pushed via SignalR.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Failed to parse sensor data payload.");
+                    }
                 }
-            }
-            else
-            {
-                Console.WriteLine("Failed to parse MQTT payload.");
+                else if (topic == "status/device")
+                {
+                    try
+                    {
+                        var feedback = JsonSerializer.Deserialize<ActionHistory>(payload,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                        if (feedback != null && !string.IsNullOrEmpty(feedback.DeviceName))
+                        {
+                            var newAction = new ActionHistory
+                            {
+                                DeviceName = feedback.DeviceName,
+                                IsOn = feedback.IsOn,
+                                Timestamp = DateTime.UtcNow
+                            };
+
+                            dbContext.ActionHistories.Add(newAction);
+                            await dbContext.SaveChangesAsync(); // 1. Lưu trạng thái đã được xác nhận vào DB
+                            await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction); // 2. Đẩy thông báo xác nhận đến giao diện
+                    
+                            Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error processing device status feedback: {ex.Message}");
+                    }
+                }
             }
         }
 
@@ -99,4 +135,4 @@ namespace MyIotWebsite.Services
             return Task.CompletedTask;
         }
     }
-}       
+}

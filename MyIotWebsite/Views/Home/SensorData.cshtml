@@ -4,41 +4,90 @@ ViewData["Title"] = "Sensor Data";
 
 @section Styles {
 <style>
-    body { background-color: #f0f2f5; }
-    .filter-card {
-        background-color: #ffffff;
+    .video-background-container {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100vh;
+        overflow: hidden; z-index: -2;
+    }
+    #bg-video {
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+    .video-overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        z-index: -1;
+    }
+    body { background-color: transparent; }
+
+    .filter-card, .data-card {
+        background-color: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         padding: 1.5rem;
     }
-    .data-card {
-        background-color: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
+    .data-card { overflow: hidden; }
     .data-table { margin-bottom: 0; }
-    .data-table thead th { background-color: #343a40 !important; color: #fff !important; border-bottom: none; }
+    .data-table thead th {
+        background-color: #FDEB9E !important;
+        color: #000B58 !important;
+        border-bottom: none;
+        vertical-align: middle;
+    }
     .data-table tbody tr { transition: background-color 0.3s ease; animation: fadeIn 0.5s ease-out; }
     .new-row-highlight { animation: highlightFade 2s ease-out; }
     @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @@keyframes highlightFade { 0% { background-color: #fff3cd; } 100% { background-color: transparent; } }
     .text-value-high { color: #dc3545; font-weight: 500; }
     .text-value-low { color: #0d6efd; font-weight: 500; }
+
+    /* --- CSS CHO SẮP XẾP --- */
+    .sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+    .sortable:hover {
+        color: #0d6efd;
+    }
+    .sortable .sort-icon {
+        color: #adb5bd;
+        margin-left: 5px;
+        transition: color 0.2s, transform 0.2s;
+        display: inline-block; /* Để transform hoạt động */
+    }
+    .sortable.sorted .sort-icon {
+        color: #000;
+    }
+    .sortable.asc .sort-icon {
+        transform: rotate(0deg); /* Mũi tên lên */
+    }
+    .sortable.desc .sort-icon {
+        transform: rotate(180deg); /* Mũi tên xuống */
+    }
+
 </style>
 }
+
+<div class="video-background-container">
+    <div class="video-overlay"></div>
+    <video playsinline autoplay muted loop id="bg-video">
+        <source src="~/videos/background-video.mp4" type="video/mp4">
+    </video>
+</div>
 
 <h1 class="display-4">Tìm kiếm Dữ liệu Cảm biến</h1>
 <p>Sử dụng bộ lọc thông minh để truy vấn dữ liệu.</p>
 
 <div class="filter-card mb-4">
-    <div class="row g-3 align-items-center">
-        <div class="col-md-6">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5">
             <label for="search-input" class="form-label"><i class="fas fa-keyboard me-2"></i>Nhập giá trị tìm kiếm</label>
             <input type="text" id="search-input" class="form-control" placeholder="Ví dụ: 30, >500, 2025-10-02..." />
         </div>
-
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label for="search-type-select" class="form-label"><i class="fas fa-cogs me-2"></i>Loại tìm kiếm</label>
             <select id="search-type-select" class="form-select">
                 <option value="smart" selected>Thông minh (SMART)</option>
@@ -47,8 +96,15 @@ ViewData["Title"] = "Sensor Data";
                 <option value="light">Ánh sáng</option>
             </select>
         </div>
-
-        <div class="col-md-2 d-flex align-items-end">
+        <div class="col-md-2">
+            <label for="pagesize-select" class="form-label"><i class="fas fa-list-ol me-2"></i>Số dòng</label>
+            <select id="pagesize-select" class="form-select">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        <div class="col-md-2">
             <button id="search-btn" class="btn btn-primary w-100">
                 <i class="fas fa-search me-1"></i> Tìm
             </button>
@@ -56,165 +112,271 @@ ViewData["Title"] = "Sensor Data";
     </div>
 </div>
 
-
 <div class="data-card">
     <table class="table table-hover data-table">
         <thead>
         <tr>
-            <th>ID</th>
-            <th>Nhiệt độ (°C)</th>
-            <th>Độ ẩm (%)</th>
-            <th>Ánh sáng</th>
-            <th>Thời gian</th>
+            <th class="sortable" data-sortby="id">ID <i class="fas fa-sort-down sort-icon"></i></th>
+            <th class="sortable" data-sortby="temperature">Nhiệt độ (°C) <i class="fas fa-sort-down sort-icon"></i></th>
+            <th class="sortable" data-sortby="humidity">Độ ẩm (%) <i class="fas fa-sort-down sort-icon"></i></th>
+            <th class="sortable" data-sortby="light">Ánh sáng <i class="fas fa-sort-down sort-icon"></i></th>
+            <th class="sortable sorted desc" data-sortby="timestamp">Thời gian <i class="fas fa-sort-down sort-icon"></i></th>
         </tr>
         </thead>
         <tbody id="sensor-data-table-body"></tbody>
     </table>
 </div>
-<nav class="mt-4">
+
+<nav class="mt-4" aria-label="Page navigation">
     <ul class="pagination justify-content-center" id="pagination-controls"></ul>
 </nav>
 
 @section Scripts {
 <script>
-    // Khai báo các phần tử giao diện mới
-    const searchInput = document.getElementById('search-input');
-    const searchTypeSelect = document.getElementById('search-type-select');
-    const searchButton = document.getElementById('search-btn');
-    const paginationControls = document.getElementById('pagination-controls');
-    const tableBody = document.getElementById('sensor-data-table-body');
-    let currentPage = 1;
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('search-input');
+        const searchTypeSelect = document.getElementById('search-type-select');
+        const pageSizeSelect = document.getElementById('pagesize-select');
+        const searchButton = document.getElementById('search-btn');
+        const paginationControls = document.getElementById('pagination-controls');
+        const tableBody = document.getElementById('sensor-data-table-body');
+        const tableHeaders = document.querySelectorAll('.sortable');
 
-    function getValueClass(type, value) {
-        if (type === 'temp') {
-            if (value > 35) return 'text-value-high';
-            if (value < 20) return 'text-value-low';
+        let currentPage = 1;
+        let currentSortBy = 'timestamp'; // Trạng thái sắp xếp mặc định
+        let currentSortOrder = 'desc';
+
+        // Thêm hàm helper này vào đây
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
+            const year = date.getFullYear().toString().slice(-2); // Lấy 2 số cuối của năm
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
         }
-        if (type === 'hum') {
-            if (value > 80) return 'text-value-high';
-            if (value < 40) return 'text-value-low';
-        }
-        return '';
-    }
 
-    async function loadSensorData(page = 1) {
-        currentPage = page;
-        try {
-            const params = new URLSearchParams();
-
-            if (searchInput.value) {
-                params.append('searchTerm', searchInput.value);
+        function getValueClass(type, value) {
+            if (type === 'temp') {
+                if (value > 35) return 'text-value-high';
+                if (value < 20) return 'text-value-low';
             }
-            params.append('searchType', searchTypeSelect.value);
-
-            params.append('pageNumber', currentPage);
-            params.append('pageSize', 10);
-
-            const apiUrl = `/api/IotApi/sensordata/search?${params.toString()}`;
-            const response = await fetch(apiUrl);
-
-            if (!response.ok) throw new Error("Network response was not ok");
-            const paginatedResponse = await response.json();
-
-            tableBody.innerHTML = '';
-
-            if (paginatedResponse.data.length === 0 && searchInput.value) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-warning">Không tồn tại bất kỳ giá trị nào như bạn yêu cầu.</td></tr>`;
-                paginationControls.innerHTML = '';
-                return;
+            if (type === 'hum') {
+                if (value > 80) return 'text-value-high';
+                if (value < 40) return 'text-value-low';
             }
-
-            paginatedResponse.data.forEach(record => {
-                const row = `<tr>
-                                <td>${record.id}</td>
-                                <td class="${getValueClass('temp', record.temperature)}">${record.temperature.toFixed(1)}</td>
-                                <td class="${getValueClass('hum', record.humidity)}">${record.humidity.toFixed(1)}</td>
-                                <td>${record.light}</td>
-                                <td>${new Date(record.timestamp).toLocaleString('vi-VN')}</td>
-                             </tr>`;
-                tableBody.innerHTML += row;
-            });
-            renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
-        } catch (error) {
-            console.error("Lỗi khi tải dữ liệu:", error);
-            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Không thể tải dữ liệu.</td></tr>';
+            return '';
         }
-    }
 
-    function renderPagination(totalPages, currentPage) {
-        paginationControls.innerHTML = '';
-        if (totalPages <= 1) return;
+        // --- HÀM TẢI DỮ LIỆU ĐÃ CẬP NHẬT ---
+        async function loadSensorData(page = 1) {
+            currentPage = page;
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center">Đang tải dữ liệu...</td></tr>`;
+            try {
+                const params = new URLSearchParams();
+                if (searchInput.value) {
+                    params.append('searchTerm', searchInput.value.trim());
+                }
+                params.append('searchType', searchTypeSelect.value);
+                params.append('pageNumber', currentPage);
+                params.append('pageSize', pageSizeSelect.value);
+                params.append('sortBy', currentSortBy);     // Gửi tham số sắp xếp
+                params.append('sortOrder', currentSortOrder); // Gửi tham số sắp xếp
 
-        const pageToShow = 5;
-        let startPage, endPage;
+                const apiUrl = `/api/IotApi/sensordata/search?${params.toString()}`;
+                const response = await fetch(apiUrl);
 
-        if (totalPages <= pageToShow + 2) {
-            startPage = 1;
-            endPage = totalPages;
-        } else {
-            if (currentPage <= Math.ceil(pageToShow / 2)) {
+                if (!response.ok) throw new Error(`Lỗi mạng: ${response.statusText}`);
+                const paginatedResponse = await response.json();
+
+                tableBody.innerHTML = '';
+
+                if (paginatedResponse.data.length === 0) {
+                    const message = searchInput.value
+                        ? "Không tồn tại bất kỳ giá trị nào như bạn yêu cầu."
+                        : "Chưa có dữ liệu nào.";
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-warning p-3">${message}</td></tr>`;
+                    paginationControls.innerHTML = ''; // Xóa phân trang nếu không có dữ liệu
+                    return;
+                }
+
+                paginatedResponse.data.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${record.id}</td>
+                                        <td class="${getValueClass('temp', record.temperature)}">${record.temperature.toFixed(1)}</td>
+                                        <td class="${getValueClass('hum', record.humidity)}">${record.humidity.toFixed(1)}</td>
+                                        <td>${record.light}</td>
+                                        <td>${formatDateTime(record.timestamp)}</td>`;
+                    tableBody.appendChild(row);
+                });
+
+                renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu:", error);
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger p-3">Không thể tải dữ liệu. Vui lòng thử lại.</td></tr>';
+            }
+        }
+
+        // --- HÀM MỚI: TẠO GIAO DIỆN PHÂN TRANG ---
+        function renderPagination(totalPages, currentPage) {
+            paginationControls.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            const createPageItem = (page, text, isDisabled = false, isActive = false) => {
+                const li = document.createElement('li');
+                li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
+                const a = document.createElement('a');
+                a.className = 'page-link';
+                a.href = '#';
+                a.innerText = text;
+                if (!isDisabled) {
+                    a.onclick = (e) => {
+                        e.preventDefault();
+                        loadSensorData(page);
+                    };
+                }
+                li.appendChild(a);
+                return li;
+            };
+
+            // Nút Previous
+            paginationControls.appendChild(createPageItem(currentPage - 1, 'Previous', currentPage === 1));
+
+            // Logic hiển thị các nút số trang
+            const pageToShow = 5;
+            let startPage, endPage;
+
+            if (totalPages <= pageToShow) {
                 startPage = 1;
-                endPage = pageToShow;
-            } else if (currentPage + Math.floor(pageToShow / 2) >= totalPages) {
-                startPage = totalPages - pageToShow + 1;
                 endPage = totalPages;
             } else {
-                startPage = currentPage - Math.floor(pageToShow / 2);
-                endPage = currentPage + Math.floor(pageToShow / 2);
+                const maxPagesBeforeCurrentPage = Math.floor(pageToShow / 2);
+                const maxPagesAfterCurrentPage = Math.ceil(pageToShow / 2) - 1;
+                if (currentPage <= maxPagesBeforeCurrentPage) {
+                    startPage = 1;
+                    endPage = pageToShow;
+                } else if (currentPage + maxPagesAfterCurrentPage >= totalPages) {
+                    startPage = totalPages - pageToShow + 1;
+                    endPage = totalPages;
+                } else {
+                    startPage = currentPage - maxPagesBeforeCurrentPage;
+                    endPage = currentPage + maxPagesAfterCurrentPage;
+                }
             }
-        }
 
-        let html = '';
-        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadSensorData(${currentPage - 1})">Previous</a></li>`;
-        if (startPage > 1) {
-            html += `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault(); loadSensorData(1)">1</a></li>`;
-            if (startPage > 2) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        }
-        for (let i = startPage; i <= endPage; i++) {
-            html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadSensorData(${i})">${i}</a></li>`;
-        }
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            html += `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault(); loadSensorData(${totalPages})">${totalPages}</a></li>`;
-        }
-        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); loadSensorData(${currentPage + 1})">Next</a></li>`;
-        paginationControls.innerHTML = html;
-    }
-
-    const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
-    connection.on("ReceiveSensorData", function (record) {
-        if (currentPage === 1 && !searchInput.value) {
-            const row = document.createElement('tr');
-            row.className = 'new-row-highlight';
-            row.innerHTML = `<td>${record.id}</td>
-                             <td class="${getValueClass('temp', record.temperature)}">${record.temperature.toFixed(1)}</td>
-                             <td class="${getValueClass('hum', record.humidity)}">${record.humidity.toFixed(1)}</td>
-                             <td>${record.light}</td>
-                             <td>${new Date(record.timestamp).toLocaleString('vi-VN')}</td>`;
-            tableBody.prepend(row);
-            if (tableBody.rows.length > 10) {
-                tableBody.deleteRow(tableBody.rows.length - 1);
+            if (startPage > 1) {
+                paginationControls.appendChild(createPageItem(1, '1'));
+                if (startPage > 2) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = `<span class="page-link">...</span>`;
+                    paginationControls.appendChild(li);
+                }
             }
-        }
-    });
 
-    searchButton.addEventListener('click', () => loadSensorData(1));
-    searchInput.addEventListener('keyup', (event) => {
-        if (event.key === 'Enter') {
-            loadSensorData(1);
-        }
-    });
+            for (let i = startPage; i <= endPage; i++) {
+                paginationControls.appendChild(createPageItem(i, i, false, i === currentPage));
+            }
 
-    async function start() {
-        try {
-            await connection.start();
-            console.log("SignalR Connected.");
-            await loadSensorData(1);
-        } catch (err) {
-            console.error(err);
-            setTimeout(start, 5000);
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = `<span class="page-link">...</span>`;
+                    paginationControls.appendChild(li);
+                }
+                paginationControls.appendChild(createPageItem(totalPages, totalPages));
+            }
+
+            // Nút Next
+            paginationControls.appendChild(createPageItem(currentPage + 1, 'Next', currentPage === totalPages));
         }
-    };
-    start();
+
+        // --- HÀM MỚI: CẬP NHẬT UI CHO CÁC NÚT SẮP XẾP ---
+        function updateSortUI() {
+            tableHeaders.forEach(header => {
+                const sortBy = header.getAttribute('data-sortby');
+                header.classList.remove('sorted', 'asc', 'desc');
+                if (sortBy === currentSortBy) {
+                    header.classList.add('sorted', currentSortOrder);
+                }
+            });
+        }
+
+        // --- GẮN SỰ KIỆN CHO CÁC NÚT SẮP XẾP ---
+        tableHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const sortBy = header.getAttribute('data-sortby');
+                if (!sortBy) return;
+
+                if (currentSortBy === sortBy) {
+                    // Đảo chiều sắp xếp nếu click lại cột cũ
+                    currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // Sắp xếp tăng dần nếu click cột mới
+                    currentSortBy = sortBy;
+                    currentSortOrder = 'asc';
+                }
+                updateSortUI();
+                loadSensorData(1); // Tải lại dữ liệu từ trang đầu tiên
+            });
+        });
+
+        // --- GẮN CÁC SỰ KIỆN KHÁC ---
+        searchButton.addEventListener('click', () => loadSensorData(1));
+        pageSizeSelect.addEventListener('change', () => loadSensorData(1));
+        searchInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                loadSensorData(1);
+            }
+        });
+
+        // --- LOGIC SIGNALR (KHÔNG THAY ĐỔI) ---
+        const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
+        connection.on("ReceiveSensorData", function (record) {
+            // Chỉ thêm dòng mới nếu đang ở trang 1 và không có bộ lọc tìm kiếm
+            if (currentPage === 1 && !searchInput.value && currentSortBy === 'timestamp' && currentSortOrder === 'desc') {
+                const existingRows = tableBody.getElementsByTagName('tr');
+                // Loại bỏ thông báo "Đang tải" hoặc "Không có dữ liệu" nếu có
+                if (existingRows.length === 1 && existingRows[0].getElementsByTagName('td').length > 1) {
+                    if (existingRows[0].querySelector('.text-warning, .text-danger, .text-center')) {
+                        tableBody.innerHTML = '';
+                    }
+                }
+
+                const row = document.createElement('tr');
+                row.className = 'new-row-highlight';
+                // --- MỚI ---
+                row.innerHTML = `<td>${record.id}</td>
+                                    <td class="${getValueClass('temp', record.temperature)}">${record.temperature.toFixed(1)}</td>
+                                    <td class="${getValueClass('hum', record.humidity)}">${record.humidity.toFixed(1)}</td>
+                                    <td>${record.light}</td>
+                                    <td>${formatDateTime(record.timestamp)}</td>`; // Sử dụng hàm mới
+                tableBody.prepend(row);
+
+                const pageSize = parseInt(pageSizeSelect.value, 10);
+                if (tableBody.rows.length > pageSize) {
+                    tableBody.deleteRow(tableBody.rows.length - 1);
+                }
+            }
+        });
+
+        // --- KHỞI ĐỘNG KẾT NỐI VÀ TẢI DỮ LIỆU BAN ĐẦU ---
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+                updateSortUI(); // Cập nhật UI sắp xếp ban đầu
+                await loadSensorData(1); // Tải dữ liệu ban đầu
+            } catch (err) {
+                console.error("Lỗi SignalR: ", err);
+                setTimeout(start, 5000); // Thử kết nối lại sau 5s
+            }
+        };
+
+        start();
+    });
 </script>
 }
