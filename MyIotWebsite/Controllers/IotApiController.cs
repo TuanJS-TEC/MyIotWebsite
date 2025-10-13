@@ -6,7 +6,7 @@ using MyIotWebsite.Hubs;
 using MyIotWebsite.Models;
 using MyIotWebsite.Services;
 using System.Globalization;
-using System.Linq.Expressions;// Thêm using cho CultureInfo
+using System.Linq.Expressions;
 
 namespace MyIotWebsite.Controllers
 {
@@ -19,7 +19,6 @@ namespace MyIotWebsite.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IHubContext<SensorHub> _hubContext;
 
-        // --- CONSTRUCTOR ĐÃ ĐƯỢC SỬA LỖI HOÀN CHỈNH ---
         public IotApiController(
             ApplicationDbContext context, 
             MqttClientService mqttService, 
@@ -53,7 +52,7 @@ namespace MyIotWebsite.Controllers
         [HttpGet("sensordata/search")]
         public async Task<ActionResult<PaginatedResponse<SensorData>>> SearchAllSensors(
             [FromQuery] string? searchTerm,
-            [FromQuery] string searchType = "smart",
+            [FromQuery] string searchType = "ALL",
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string sortBy = "timestamp",
@@ -61,31 +60,32 @@ namespace MyIotWebsite.Controllers
         {
             // Bắt đầu truy vấn, chưa thực thi
             var query = _context.SensorData.AsQueryable();
-
             // =================================================================
             // Phần 1: Lọc dữ liệu (Filtering)
             // =================================================================
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                if (searchType == "smart")
+                if (searchType == "ALL")
                 {
                     string[] formats = {
                         "d/M/yyyy HH:mm:ss", "d/M/yyyy HH:mm", "d/M/yy HH:mm:ss", "d/M/yy HH:mm",
                         "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy", "d/M/yy", "d/M/yyyy", 
                         "yyyy-MM-dd", "HH:mm:ss", "HH:mm"
                     };
-
+            
+                    double epsilone = 0.05;
+                    
                     if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                     {
                         DateTime searchDate = !searchTerm.Contains('/') && !searchTerm.Contains('-') 
                             ? DateTime.Today.Add(parsedDate.TimeOfDay) 
                             : parsedDate;
-
+            
                         DateTime localSearchDate = DateTime.SpecifyKind(searchDate, DateTimeKind.Local);
                 
                         DateTime startDateUtc, endDateUtc;
                         var colonCount = searchTerm.Count(c => c == ':');
-
+            
                         if (colonCount == 2) // Tìm theo giây
                         {
                             startDateUtc = localSearchDate.ToUniversalTime();
@@ -105,9 +105,10 @@ namespace MyIotWebsite.Controllers
                             startDateUtc = localStartDate.ToUniversalTime();
                             endDateUtc = localEndDate.ToUniversalTime();
                         }
-
+            
                         query = query.Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc);
-                    }
+                    } 
+                    
                     else
                     {
                         query = query.Where(s => false);
@@ -140,7 +141,6 @@ namespace MyIotWebsite.Controllers
                     }
                 }
             }
-
             // =================================================================
             // Phần 2: Sắp xếp dữ liệu (Sorting)
             // =================================================================

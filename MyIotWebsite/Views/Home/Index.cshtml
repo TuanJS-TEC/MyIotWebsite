@@ -92,12 +92,12 @@
         font-size: 0.8rem;
         color: #000B58;
     }
-    .control-card .status.text-success {
-        color: #000B58 !important;
-    }
-    .control-card .status.text-secondary {
-        color: #000B58 !important;
-    }
+    /*.control-card .status.text-success {*/
+    /*    color: #000B58 !important;*/
+    /*}*/
+    /*.control-card .status.text-secondary {*/
+    /*    color: #000B58 !important;*/
+    /*}*/
 
     /* Tùy chỉnh công tắc gạt */
     .form-switch .form-check-input {
@@ -105,11 +105,11 @@
         height: 1.75em;
         cursor: pointer;
     }
-    .control-card.pending .form-switch {
-        opacity: 0.5;
-        pointer-events: none;
-        animation: pulse 1.5s infinite;
-    }
+    /*.control-card.pending .form-switch {*/
+    /*    opacity: 0.5;*/
+    /*    pointer-events: none;*/
+    /*    animation: pulse 1.5s infinite;*/
+    /*}*/
 
     @@keyframes pulse {
         0% { opacity: 0.5; }
@@ -264,7 +264,7 @@
                 document.getElementById('hum-value').innerText = data.humidity.toFixed(1) + ' %';
             }
             if (data && data.light != null) {
-                document.getElementById('light-value').innerText = data.light;
+                document.getElementById('light-value').innerText = data.light.toFixed(1) + ' %';
             }
         } catch (error) {
             console.error('Error fetching latest data:', error);
@@ -350,7 +350,7 @@
                         type: 'linear',
                         display: true,
                         position: 'right', // Đặt trục Ánh sáng ở bên phải
-                        title: { display: true, text: 'Ánh sáng', color: 'rgb(255, 206, 86)' },
+                        title: { display: true, text: 'Ánh sáng (%)', color: 'rgb(255, 206, 86)' },
                         ticks: { color: 'rgb(255, 206, 86)' },
                         grid: { drawOnChartArea: false }
                     }

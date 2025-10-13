@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MyIotWebsite")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+27783a73a207f79b7e8e7a00c5663d06639289a4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+737a340fce40b334cadd1907b49238308d55617d")]
 [assembly: System.Reflection.AssemblyProductAttribute("MyIotWebsite")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MyIotWebsite")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

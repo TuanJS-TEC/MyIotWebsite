@@ -397,7 +397,7 @@
         try {
             const params = new URLSearchParams();
             params.append('deviceName', deviceSelect.value);
-            params.append('status', statusSelect.value); // ✅ THÊM: Gửi tham số status
+            params.append('status', statusSelect.value); 
             params.append('searchTerm', searchInput.value.trim());
             params.append('pageNumber', currentPage);
             params.append('pageSize', pageSizeSelect.value);
@@ -500,7 +500,6 @@
         }
     });
 
-    // ✅ THAY ĐỔI: Thêm sự kiện 'change' cho các dropdown mới, khi thay đổi sẽ tự tìm kiếm
     deviceSelect.addEventListener('change', () => loadHistoryData(1));
     statusSelect.addEventListener('change', () => loadHistoryData(1));
     pageSizeSelect.addEventListener('change', () => loadHistoryData(1));
