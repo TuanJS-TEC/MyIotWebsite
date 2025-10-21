@@ -70,7 +70,7 @@ namespace MyIotWebsite.Controllers
                     string[] formats = {
                         "d/M/yyyy HH:mm:ss", "d/M/yyyy HH:mm", "d/M/yy HH:mm:ss", "d/M/yy HH:mm",
                         "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy", "d/M/yy", "d/M/yyyy", 
-                        "yyyy-MM-dd", "HH:mm:ss", "HH:mm"
+                        "yyyy-MM-dd", "HH:mm:ss", "HH:mm", "HH:mm:ss"
                     };
             
                     double epsilone = 0.05;
