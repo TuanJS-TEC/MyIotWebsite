@@ -73,7 +73,6 @@ namespace MyIotWebsite.Controllers
                         "yyyy-MM-dd", "HH:mm:ss", "HH:mm", "HH:mm:ss"
                     };
             
-                    double epsilone = 0.05;
                     
                     if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                     {
