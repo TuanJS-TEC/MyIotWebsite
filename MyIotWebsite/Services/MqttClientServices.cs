@@ -17,7 +17,7 @@ namespace MyIotWebsite.Services
         private IManagedMqttClient _mqttClient;
 
         // Thông tin MQTT Broker
-        private const string MqttServer = "172.20.10.4"; 
+        private const string MqttServer = "192.168.0.107"; 
         private const int MqttPort = 1883;
         private const string MqttUser = "HoangMinhTuan"; 
         private const string MqttPassword = "123";
@@ -101,23 +101,38 @@ namespace MyIotWebsite.Services
                 {
                     try
                     {
-                        var feedback = JsonSerializer.Deserialize<ActionHistory>(payload,
-                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                        if (feedback != null && !string.IsNullOrEmpty(feedback.DeviceName))
+                        // Dùng JsonDocument để đọc JSON một cách an toàn
+                        using (JsonDocument doc = JsonDocument.Parse(payload))
                         {
-                            var newAction = new ActionHistory
-                            {
-                                DeviceName = feedback.DeviceName,
-                                IsOn = feedback.IsOn,
-                                Timestamp = DateTime.UtcNow
-                            };
+                            JsonElement root = doc.RootElement;
 
-                            dbContext.ActionHistories.Add(newAction);
-                            await dbContext.SaveChangesAsync(); // 1. Lưu trạng thái đã được xác nhận vào DB
-                            await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction); // 2. Đẩy thông báo xác nhận đến giao diện
-                    
-                            Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");
+                            // Kiểm tra và lấy các thuộc tính từ JSON
+                            if (root.TryGetProperty("deviceName", out JsonElement deviceNameElement) &&
+                                root.TryGetProperty("isOn", out JsonElement isOnElement))
+                            {
+                                string deviceName = deviceNameElement.GetString();
+                                bool isOn = isOnElement.GetBoolean(); // Lấy giá trị boolean
+
+                                if (!string.IsNullOrEmpty(deviceName))
+                                {
+                                    // Tạo đối tượng ActionHistory mới
+                                    var newAction = new ActionHistory
+                                    {
+                                        DeviceName = deviceName,
+                                        IsOn = isOn,
+                                        Timestamp = DateTime.UtcNow
+                                    };
+
+                                    // Thêm vào CSDL
+                                    dbContext.ActionHistories.Add(newAction);
+                                    await dbContext.SaveChangesAsync(); // 1. LƯU THÀNH CÔNG
+
+                                    // Đẩy ra giao diện
+                                    await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction); 
+            
+                                    Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");
+                                }
+                            }
                         }
                     }
                     catch (Exception ex)

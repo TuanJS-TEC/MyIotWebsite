@@ -72,7 +72,6 @@ namespace MyIotWebsite.Controllers
                         "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy", "d/M/yy", "d/M/yyyy", 
                         "yyyy-MM-dd", "HH:mm:ss", "HH:mm", "HH:mm:ss"
                     };
-            
                     
                     if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                     {
@@ -106,11 +105,19 @@ namespace MyIotWebsite.Controllers
                         }
             
                         query = query.Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc);
-                    } 
-                    
-                    else
+                    }
+                    else if (double.TryParse(searchTerm, NumberStyles.Any, CultureInfo.InvariantCulture,
+                                 out var numericValue))
                     {
-                        query = query.Where(s => false);
+                        double tolerance = 0.0001; 
+                        long.TryParse(searchTerm, out var longId);
+
+                        query = query.Where(s => 
+                            (longId != 0 && s.Id == longId) || // Tìm ID chính xác
+                            (s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance) ||
+                            (s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance) ||
+                            (s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance)
+                        );
                     }
                 }
                 else // Lọc theo thông số sensor
@@ -189,7 +196,26 @@ namespace MyIotWebsite.Controllers
         [HttpGet("devicestates")]
         public async Task<ActionResult<IEnumerable<ActionHistory>>> GetDeviceStates()
         {
-            var latestStates = await _context.ActionHistories.GroupBy(h => h.DeviceName).Select(g => g.OrderByDescending(h => h.Timestamp).FirstOrDefault()).ToListAsync();
+            var deviceNames = await _context.ActionHistories
+                .Select(h => h.DeviceName)
+                .Distinct()
+                .ToListAsync();
+
+            var latestStates = new List<ActionHistory>();
+
+            foreach (var name in deviceNames)
+            {
+                var latestState = await _context.ActionHistories
+                    .Where(h => h.DeviceName == name)
+                    .OrderByDescending(h => h.Timestamp)
+                    .FirstOrDefaultAsync();
+
+                if (latestState != null)
+                {
+                    latestStates.Add(latestState);
+                }
+            }
+
             return Ok(latestStates);
         }
 
@@ -258,7 +284,6 @@ namespace MyIotWebsite.Controllers
                         ? DateTime.Today.Add(parsedDate.TimeOfDay) 
                         : parsedDate;
 
-                    // Bước 1: Chỉ định thời gian nhập vào là giờ Local
                     DateTime localSearchDate = DateTime.SpecifyKind(searchDate, DateTimeKind.Local);
                     DateTime startDateUtc, endDateUtc;
             

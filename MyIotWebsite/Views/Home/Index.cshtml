@@ -377,11 +377,6 @@
 
 
     // --- CÁC HÀM ĐIỀU KHIỂN THIẾT BỊ ---
-    
-   connection.on("ReceiveActionHistory", function (newAction){
-       console.log("Received action confirmation:", newAction);
-       updateDeviceStates();
-   })
 
     // Hàm này gửi lệnh đi
     async function toggleDevice(deviceName) {
@@ -433,16 +428,72 @@
         updateChart();
         updateDeviceStates();
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('fan-toggle').addEventListener('change', () => toggleDevice('fan'));
-        document.getElementById('light-toggle').addEventListener('change', () => toggleDevice('light'));
-        document.getElementById('ac-toggle').addEventListener('change', () => toggleDevice('ac'));
 
+    function updateSingleDevice(deviceState) {
+        const deviceName = deviceState.deviceName.toLowerCase();
+
+        // Tìm các element tương ứng
+        const statusElement = document.getElementById(`${deviceName}-status`);
+        const toggleElement = document.getElementById(`${deviceName}-toggle`);
+
+        // Phải dùng .closest() để tìm đúng thẻ cha
+        const cardElement = toggleElement?.closest('.control-card');
+
+        // Nếu không tìm thấy element thì thoát
+        if (!statusElement || !toggleElement || !cardElement) {
+            console.warn(`Không tìm thấy elements cho thiết bị: ${deviceName}`);
+            return;
+        }
+
+        // Xóa trạng thái "pending" (nếu có)
+        cardElement.classList.remove('pending');
+
+        // Cập nhật trạng thái text
+        if (deviceState.isOn) {
+            statusElement.innerText = 'Đang Bật';
+            statusElement.className = 'status fw-bold text-success';
+        } else {
+            statusElement.innerText = 'Đang Tắt';
+            statusElement.className = 'status fw-bold text-secondary';
+        }
+
+        // Cập nhật công tắc (quan trọng)
+        toggleElement.checked = deviceState.isOn;
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // Hàm xử lý chung cho việc nhấn công tắc
+        function handleToggleClick(event, deviceName) {
+           
+            event.preventDefault();
+
+            const cardElement = event.target.closest('.control-card');
+
+            if (cardElement.classList.contains('pending')) {
+                return;
+            }
+  
+            toggleDevice(deviceName);
+        }
+        
+        document.getElementById('fan-toggle').addEventListener('click', (e) => handleToggleClick(e, 'fan'));
+        document.getElementById('light-toggle').addEventListener('click', (e) => handleToggleClick(e, 'light'));
+        document.getElementById('ac-toggle').addEventListener('click', (e) => handleToggleClick(e, 'ac'));
+
+        // connection.on("ReceiveActionHistory", function (newAction) {
+        //     console.log("Received action confirmation:", newAction);
+        //     updateDeviceStates(newAction);
+        // });
+
+        // Code mới (BÊN TRONG DOMContentLoaded)
         connection.on("ReceiveActionHistory", function (newAction) {
             console.log("Received action confirmation:", newAction);
-            updateDeviceStates(); 
-        });
 
+            // Gọi hàm mới, dùng luôn dữ liệu newAction, không cần gọi API
+            updateSingleDevice(newAction);
+        });
+        
         connection.on("ReceiveSensorData", function (newData) {
             updateLatestData();
             updateChart();
