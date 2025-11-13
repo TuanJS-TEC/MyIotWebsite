@@ -199,25 +199,13 @@ namespace MyIotWebsite.Controllers
         [HttpGet("devicestates")]
         public async Task<ActionResult<IEnumerable<ActionHistory>>> GetDeviceStates()
         {
-            var deviceNames = await _context.ActionHistories
-                .Select(h => h.DeviceName)
-                .Distinct()
+            var latestStatesQuery = _context.ActionHistories
+                .GroupBy(h => h.DeviceName)
+                .Select(group => group.OrderByDescending(h => h.Timestamp).FirstOrDefault());
+
+            var latestStates = await latestStatesQuery
+                .Where(h => h != null) 
                 .ToListAsync();
-
-            var latestStates = new List<ActionHistory>();
-
-            foreach (var name in deviceNames)
-            {
-                var latestState = await _context.ActionHistories
-                    .Where(h => h.DeviceName == name)
-                    .OrderByDescending(h => h.Timestamp)
-                    .FirstOrDefaultAsync();
-
-                if (latestState != null)
-                {
-                    latestStates.Add(latestState);
-                }
-            }
 
             return Ok(latestStates);
         }

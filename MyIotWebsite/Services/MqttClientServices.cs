@@ -14,12 +14,13 @@ namespace MyIotWebsite.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IHubContext<SensorHub> _hubContext;
-        private IManagedMqttClient _mqttClient;
+        private readonly IManagedMqttClient _mqttClient;
+        private readonly ManagedMqttClientOptions _mqttOptions; 
 
         // Thông tin MQTT Broker
-        private const string MqttServer = "192.168.0.107"; 
+        private const string MqttServer = "192.168.0.107";
         private const int MqttPort = 1883;
-        private const string MqttUser = "HoangMinhTuan"; 
+        private const string MqttUser = "HoangMinhTuan";
         private const string MqttPassword = "123";
         private const string Topic = "sensor/data";
 
@@ -27,26 +28,44 @@ namespace MyIotWebsite.Services
         {
             _serviceProvider = serviceProvider;
             _hubContext = hubContext;
-            
-            var options = new ManagedMqttClientOptionsBuilder()
+
+            _mqttOptions = new ManagedMqttClientOptionsBuilder()
                 .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
                 .WithClientOptions(new MqttClientOptionsBuilder()
-                    .WithTcpServer(MqttServer, 1883) 
-                    .WithCredentials("HoangMinhTuan", "123") 
+                    .WithTcpServer(MqttServer, MqttPort) 
+                    .WithCredentials(MqttUser, MqttPassword) 
                     .Build())
                 .Build();
 
             _mqttClient = new MqttFactory().CreateManagedMqttClient();
             _mqttClient.ApplicationMessageReceivedAsync += OnMqttMessageReceived;
-            _mqttClient.StartAsync(options).GetAwaiter().GetResult();
+
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _mqttClient.SubscribeAsync("sensor/data").GetAwaiter().GetResult();
-            _mqttClient.SubscribeAsync("status/device").GetAwaiter().GetResult();
-            Console.WriteLine("MQTT client subscribed to sensor/data");
-            return Task.CompletedTask;
+            try
+            {
+                // 1. Kết nối tới broker
+                await _mqttClient.StartAsync(_mqttOptions);
+                Console.WriteLine("MQTT client started successfully.");
+
+                // 2. Subcribe các topic
+                await _mqttClient.SubscribeAsync("sensor/data");
+                await _mqttClient.SubscribeAsync("status/device");
+                Console.WriteLine("MQTT client subscribed to topics.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FATAL ERROR] Failed to start or subscribe MQTT client. Application will stop.");
+                Console.WriteLine($"[FATAL ERROR] Details: {ex.Message}");
+                throw; 
+            }
+            
+            // catch (Exception ex)
+            // {
+            //     Console.WriteLine($"Failed to start or subscribe MQTT client: {ex.Message}");
+            // }
         }
 
         public async Task PublishAsync(string topic, string payload)
@@ -55,6 +74,7 @@ namespace MyIotWebsite.Services
                 .WithTopic(topic)
                 .WithPayload(payload)
                 .Build();
+            
             await _mqttClient.EnqueueAsync(message);
         }
 
@@ -62,7 +82,7 @@ namespace MyIotWebsite.Services
         {
             var topic = e.ApplicationMessage.Topic;
             var payload = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
-    
+
             Console.WriteLine("Received message on topic '{0}': {1}", topic, payload);
 
             using (var scope = _serviceProvider.CreateScope())
@@ -85,11 +105,11 @@ namespace MyIotWebsite.Services
                             Light = light,
                             Timestamp = DateTime.UtcNow
                         };
-                
+
                         dbContext.SensorData.Add(sensorData);
                         await dbContext.SaveChangesAsync();
                         await hubContext.Clients.All.SendAsync("ReceiveSensorData", sensorData);
-                
+
                         Console.WriteLine("Sensor data saved to DB and pushed via SignalR.");
                     }
                     else
@@ -109,7 +129,7 @@ namespace MyIotWebsite.Services
                                 root.TryGetProperty("isOn", out JsonElement isOnElement))
                             {
                                 string deviceName = deviceNameElement.GetString();
-                                bool isOn = isOnElement.GetBoolean(); 
+                                bool isOn = isOnElement.GetBoolean();
 
                                 if (!string.IsNullOrEmpty(deviceName))
                                 {
@@ -121,10 +141,10 @@ namespace MyIotWebsite.Services
                                     };
 
                                     dbContext.ActionHistories.Add(newAction);
-                                    await dbContext.SaveChangesAsync(); 
+                                    await dbContext.SaveChangesAsync();
 
-                                    await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction); 
-            
+                                    await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction);
+
                                     Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");
                                 }
                             }
@@ -138,11 +158,13 @@ namespace MyIotWebsite.Services
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            _mqttClient?.StopAsync().GetAwaiter().GetResult();
+            if (_mqttClient != null)
+            {
+                await _mqttClient.StopAsync();
+            }
             Console.WriteLine("MQTT Client Service stopped.");
-            return Task.CompletedTask;
         }
     }
 }

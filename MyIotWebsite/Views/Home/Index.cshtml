@@ -25,9 +25,9 @@
     }
 
     .dashboard-card {
-        background-color: rgba(255, 255, 255, 0.2); /* Nền trắng trong suốt */
-        backdrop-filter: blur(15px); /* Hiệu ứng kính mờ */
-        border: 1px solid rgba(255, 255, 255, 0.3); /* Viền mờ */
+        background-color: rgba(255, 255, 255, 0.2); 
+        backdrop-filter: blur(15px); 
+        border: 1px solid rgba(255, 255, 255, 0.3); 
         border-radius: 15px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         padding: 1.5rem;
@@ -40,10 +40,9 @@
     }
     
     .dashboard-card h5 {
-        color: #000B58; /* Màu cho tiêu đề trong thẻ */
+        color: #000B58; 
     }
 
-    /* Thẻ thông số (Nhiệt độ, Độ ẩm...) */
     .status-card {
         display: flex;
         align-items: center;
@@ -64,7 +63,7 @@
 
     .status-card .info h6 {
         margin-bottom: 0.25rem;
-        color: #000B58; /* Màu chữ phụ */
+        color: #000B58; 
         font-size: 0.9rem;
     }
     .status-card .info .value {
@@ -73,7 +72,6 @@
         color: #000B58;
     }
 
-    /* Thẻ điều khiển (Quạt, Đèn...) */
     .control-card {
         display: flex;
         align-items: center;
@@ -92,32 +90,18 @@
         font-size: 0.8rem;
         color: #000B58;
     }
-    /*.control-card .status.text-success {*/
-    /*    color: #000B58 !important;*/
-    /*}*/
-    /*.control-card .status.text-secondary {*/
-    /*    color: #000B58 !important;*/
-    /*}*/
 
-    /* Tùy chỉnh công tắc gạt */
     .form-switch .form-check-input {
         width: 3.5em;
         height: 1.75em;
         cursor: pointer;
     }
-    /*.control-card.pending .form-switch {*/
-    /*    opacity: 0.5;*/
-    /*    pointer-events: none;*/
-    /*    animation: pulse 1.5s infinite;*/
-    /*}*/
-
     @@keyframes pulse {
         0% { opacity: 0.5; }
         50% { opacity: 1; }
         100% { opacity: 0.5; }
     }
     
-    /* Cập nhật màu cho biểu đồ để dễ nhìn trên nền tối */
     #sensorChart {
         background-color: rgba(255, 255, 255, 0.1);
         border-radius: 8px;
@@ -281,7 +265,7 @@
             const humidityData = historyData.map(d => d.humidity);
             const lightData = historyData.map(d => d.light);
 
-            const textColor = '#000B58'; // Màu xanh dương đậm
+            const textColor = '#000B58'; 
 
             const chartData = {
                 labels: labels,
@@ -290,21 +274,21 @@
                         label: 'Nhiệt độ (°C)',
                         data: tempData,
                         borderColor: 'rgba(255, 99, 132, 1)',
-                        yAxisID: 'yTemp', // Gán vào trục Nhiệt độ
+                        yAxisID: 'yTemp',
                         tension: 0.4
                     },
                     {
                         label: 'Độ ẩm (%)',
                         data: humidityData,
                         borderColor: 'rgba(54, 162, 235, 1)',
-                        yAxisID: 'yHum', // Gán vào trục Độ ẩm
+                        yAxisID: 'yHum', 
                         tension: 0.4
                     },
                     {
                         label:  'Ánh sáng (%)',
                         data: lightData,
                         borderColor: 'rgba(255, 206, 86, 1)',
-                        yAxisID: 'yLight', // Gán vào trục Ánh sáng
+                        yAxisID: 'yLight', 
                         tension: 0.4
                     }
                 ]
@@ -321,7 +305,7 @@
                     legend: {
                         position: 'top',
                         labels: {
-                            color: textColor, // Đổi màu chú thích
+                            color: textColor,
                             font: { size: 14 }
                         }
                     }
@@ -378,7 +362,6 @@
 
     // --- CÁC HÀM ĐIỀU KHIỂN THIẾT BỊ ---
 
-    // Hàm này gửi lệnh đi
     async function toggleDevice(deviceName) {
         const cardElement = document.getElementById(`${deviceName}-toggle`).closest('.control-card');
 
@@ -399,7 +382,7 @@
             const devices = await response.json();
 
             devices.forEach(deviceState => {
-                const deviceName = deviceState.deviceName.toLowerCase();
+                const deviceName = deviceState.deviceName.toLowerCase().trim();
                 const statusElement = document.getElementById(`${deviceName}-status`);
                 const toggleElement = document.getElementById(`${deviceName}-toggle`);
                 const cardElement = toggleElement.closest('.control-card');
@@ -430,25 +413,20 @@
     }
 
     function updateSingleDevice(deviceState) {
-        const deviceName = deviceState.deviceName.toLowerCase();
+        const deviceName = deviceState.deviceName.toLowerCase().trim();
 
-        // Tìm các element tương ứng
         const statusElement = document.getElementById(`${deviceName}-status`);
         const toggleElement = document.getElementById(`${deviceName}-toggle`);
 
-        // Phải dùng .closest() để tìm đúng thẻ cha
         const cardElement = toggleElement?.closest('.control-card');
 
-        // Nếu không tìm thấy element thì thoát
         if (!statusElement || !toggleElement || !cardElement) {
             console.warn(`Không tìm thấy elements cho thiết bị: ${deviceName}`);
             return;
         }
 
-        // Xóa trạng thái "pending" (nếu có)
         cardElement.classList.remove('pending');
 
-        // Cập nhật trạng thái text
         if (deviceState.isOn) {
             statusElement.innerText = 'Đang Bật';
             statusElement.className = 'status fw-bold text-success';
@@ -457,13 +435,11 @@
             statusElement.className = 'status fw-bold text-secondary';
         }
 
-        // Cập nhật công tắc (quan trọng)
         toggleElement.checked = deviceState.isOn;
     }
     
     document.addEventListener('DOMContentLoaded', function() {
 
-        // Hàm xử lý chung cho việc nhấn công tắc
         function handleToggleClick(event, deviceName) {
            
             event.preventDefault();
@@ -481,16 +457,8 @@
         document.getElementById('light-toggle').addEventListener('click', (e) => handleToggleClick(e, 'light'));
         document.getElementById('ac-toggle').addEventListener('click', (e) => handleToggleClick(e, 'ac'));
 
-        // connection.on("ReceiveActionHistory", function (newAction) {
-        //     console.log("Received action confirmation:", newAction);
-        //     updateDeviceStates(newAction);
-        // });
-
-        // Code mới (BÊN TRONG DOMContentLoaded)
         connection.on("ReceiveActionHistory", function (newAction) {
             console.log("Received action confirmation:", newAction);
-
-            // Gọi hàm mới, dùng luôn dữ liệu newAction, không cần gọi API
             updateSingleDevice(newAction);
         });
         

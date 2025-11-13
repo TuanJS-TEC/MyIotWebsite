@@ -8,8 +8,10 @@ using MyIotWebsite.Hubs;
 var builder = WebApplication.CreateBuilder(args) ;
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
-builder.Services.AddHostedService<MqttClientService>();
-builder.Services.AddSingleton<MqttClientService>();
+// builder.Services.AddHostedService<MqttClientService>();
+// builder.Services.AddSingleton<MqttClientService>();
+builder.Services.AddSingleton<MqttClientService>(); 
+builder.Services.AddHostedService<MqttClientService>(sp => sp.GetRequiredService<MqttClientService>());
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 

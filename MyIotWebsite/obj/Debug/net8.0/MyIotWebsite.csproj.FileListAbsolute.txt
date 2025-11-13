@@ -46,6 +46,8 @@
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/Microsoft.VisualStudio.Web.CodeGenerators.Mvc.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/Microsoft.Win32.SystemEvents.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/Mono.TextTemplating.dll
+/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/MQTTnet.dll
+/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/MQTTnet.Extensions.ManagedClient.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/Newtonsoft.Json.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/Npgsql.dll
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll
@@ -222,6 +224,7 @@
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.MvcApplicationPartsAssemblyInfo.cache
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.RazorAssemblyInfo.cache
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.RazorAssemblyInfo.cs
+/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.sourcelink.json
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/staticwebassets.build.json
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/staticwebassets.development.json
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/staticwebassets/msbuild.MyIotWebsite.Microsoft.AspNetCore.StaticWebAssets.props
@@ -238,6 +241,3 @@
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.pdb
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.genruntimeconfig.cache
 /Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/ref/MyIotWebsite.dll
-/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/MQTTnet.dll
-/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/bin/Debug/net8.0/MQTTnet.Extensions.ManagedClient.dll
-/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.sourcelink.json

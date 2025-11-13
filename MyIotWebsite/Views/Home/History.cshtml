@@ -247,13 +247,6 @@
                         <td>${actionBadge}</td>
                         <td>${formattedDate}</td>
                      </tr>`;
-                // const row = `<tr>
-                //                 <td>${record.id}</td>
-                //                 <td>${icon} ${record.deviceName}</td>
-                //                 <td>${actionBadge}</td>
-                //                 <td>${formattedDate}</td>
-                //              </tr>`;
-                // tableBody.innerHTML += row;
             });
 
             tableBody.innerHTML = rowsHtml;
@@ -327,8 +320,8 @@
             const response = await fetch('/api/IotApi/devicestates');
             if (!response.ok) return;
 
-            const devices = await response.json(); // Đây là mảng [ActionHistory]
-            deviceSelect.innerHTML = '<option value="all" selected>Tất cả</option>'; // Reset
+            const devices = await response.json(); 
+            deviceSelect.innerHTML = '<option value="all" selected>Tất cả</option>'; 
 
             const deviceNames = [...new Set(devices.map(d => d.deviceName))];
 
@@ -340,7 +333,6 @@
 
         } catch (error) {
             console.error("Lỗi khi tải danh sách thiết bị:", error);
-            // Nếu lỗi, vẫn giữ lại các option hardcode (nếu bạn muốn)
         }
     }
 

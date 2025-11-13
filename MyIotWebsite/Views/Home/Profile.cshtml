@@ -1,7 +1,6 @@
 @{
     ViewData["Title"] = "Profile";
     
-    // Logic Gravatar giữ nguyên
     var email = "HoangminhtuanJS@gmail.com";
     var gravatarHash = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(email.Trim().ToLower()));
     var gravatarUrl = $"https://www.gravatar.com/avatar/{Convert.ToHexString(gravatarHash).ToLower()}?s=200&d=mp";
@@ -9,7 +8,6 @@
 
 @section Styles {
 <style>
-    /* --- PHẦN MỚI: CSS CHO VIDEO BACKGROUND --- */
     .video-background-container {
         position: fixed; top: 0; left: 0;
         width: 100%; height: 100vh;
@@ -22,14 +20,13 @@
     .video-overlay {
         position: fixed; top: 0; left: 0;
         width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.5); /* Tăng độ tối để chữ/card nổi bật hơn */
+        background-color: rgba(0, 0, 0, 0.5); 
         z-index: -1;
     }
     body { 
-        background-color: #121212; /* Màu nền dự phòng nếu video không tải được */
+        background-color: #121212;
     }
 
-    /* --- CÁC STYLE CŨ --- */
     .profile-page-wrapper {
         padding: 4rem 0;
         align-items: center;
@@ -37,7 +34,6 @@
         display: flex;
         justify-content: center;
     }
-    /* Các thẻ card giờ có nền trong suốt và hiệu ứng kính mờ */
     .profile-card, .tech-showcase {
         background-color: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(15px);
@@ -46,7 +42,7 @@
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         padding: 2.5rem;
         height: 100%;
-        color: #134686; /* Chuyển màu chữ mặc định thành trắng */
+        color: #134686; 
     }
     
     .profile-avatar {

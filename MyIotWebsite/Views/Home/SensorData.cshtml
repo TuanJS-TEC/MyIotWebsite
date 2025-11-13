@@ -181,7 +181,6 @@ ViewData["Title"] = "Sensor Data";
             return '';
         }
 
-        // --- HÀM TẢI DỮ LIỆU ĐÃ CẬP NHẬT ---
         async function loadSensorData(page = 1) {
             currentPage = page;
             tableBody.innerHTML = `<tr><td colspan="5" class="text-center">Đang tải dữ liệu...</td></tr>`;
@@ -193,8 +192,8 @@ ViewData["Title"] = "Sensor Data";
                 params.append('searchType', searchTypeSelect.value);
                 params.append('pageNumber', currentPage);
                 params.append('pageSize', pageSizeSelect.value);
-                params.append('sortBy', currentSortBy);     // Gửi tham số sắp xếp
-                params.append('sortOrder', currentSortOrder); // Gửi tham số sắp xếp
+                params.append('sortBy', currentSortBy);    
+                params.append('sortOrder', currentSortOrder); 
 
                 const apiUrl = `/api/IotApi/sensordata/search?${params.toString()}`;
                 const response = await fetch(apiUrl);
@@ -239,9 +238,6 @@ ViewData["Title"] = "Sensor Data";
 
                     tableBody.appendChild(row);
                 });
-                
-                
-
                 renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu:", error);
@@ -272,7 +268,6 @@ ViewData["Title"] = "Sensor Data";
 
             paginationControls.appendChild(createPageItem(currentPage - 1, 'Previous', currentPage === 1));
 
-            // Logic hiển thị các nút số trang
             const pageToShow = 5;
             let startPage, endPage;
 
@@ -318,11 +313,9 @@ ViewData["Title"] = "Sensor Data";
                 paginationControls.appendChild(createPageItem(totalPages, totalPages));
             }
 
-            // Nút Next
             paginationControls.appendChild(createPageItem(currentPage + 1, 'Next', currentPage === totalPages));
         }
 
-        // --- HÀM MỚI: CẬP NHẬT UI CHO CÁC NÚT SẮP XẾP ---
         function updateSortUI() {
             tableHeaders.forEach(header => {
                 const sortBy = header.getAttribute('data-sortby');
