@@ -38,11 +38,11 @@ ViewData["Title"] = "Sensor Data";
         vertical-align: middle;
     }
     .data-table tbody tr { transition: background-color 0.3s ease; animation: fadeIn 0.5s ease-out; }
-    /*.new-row-highlight { animation: highlightFade 2s ease-out; }*/
+    .new-row-highlight { animation: highlightFade 2s ease-out; }
     @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @@keyframes highlightFade { 0% { background-color: #fff3cd; } 100% { background-color: transparent; } }
-    /*.text-value-high { color: #dc3545; font-weight: 500; }*/
-    /*.text-value-low { color: #0d6efd; font-weight: 500; }*/
+    .text-value-high { color: #dc3545; font-weight: 500; }
+    .text-value-low { color: #0d6efd; font-weight: 500; }
 
     /* --- CSS CHO SẮP XẾP --- */
     .sortable {
@@ -56,16 +56,16 @@ ViewData["Title"] = "Sensor Data";
         color: #adb5bd;
         margin-left: 5px;
         transition: color 0.2s, transform 0.2s;
-        display: inline-block; /* Để transform hoạt động */
+        display: inline-block; 
     }
     .sortable.sorted .sort-icon {
         color: #000;
     }
     .sortable.asc .sort-icon {
-        transform: rotate(0deg); /* Mũi tên lên */
+        transform: rotate(0deg);
     }
     .sortable.desc .sort-icon {
-        transform: rotate(180deg); /* Mũi tên xuống */
+        transform: rotate(180deg); 
     }
 
 </style>
@@ -133,6 +133,7 @@ ViewData["Title"] = "Sensor Data";
 
 @section Scripts {
 <script>
+    
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.getElementById('search-input');
         const searchTypeSelect = document.getElementById('search-type-select');
@@ -146,12 +147,22 @@ ViewData["Title"] = "Sensor Data";
         let currentSortBy = 'timestamp'; 
         let currentSortOrder = 'desc';
 
-        // Thêm hàm helper này vào đây
+        function debounce(func, delay = 500) {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    func.apply(this, args);
+                }, delay);
+            };
+        }
+        const debouncedLoadData = debounce(() => loadSensorData(1), 500);
+        
         function formatDateTime(dateString) {
             const date = new Date(dateString);
             const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
-            const year = date.getFullYear().toString().slice(-2); // Lấy 2 số cuối của năm
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear().toString().slice(-2); 
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             const seconds = String(date.getSeconds()).padStart(2, '0');
@@ -188,7 +199,16 @@ ViewData["Title"] = "Sensor Data";
                 const apiUrl = `/api/IotApi/sensordata/search?${params.toString()}`;
                 const response = await fetch(apiUrl);
 
-                // if (!response.ok) throw new Error(`Lỗi mạng: ${response.statusText}`);
+                if (!response.ok){
+                    if (response.status === 404) {
+                        const errorMessage = await response.text();
+                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-3">${errorMessage}</td></tr>`;
+                    } else {
+                        throw new Error(`Lỗi máy chủ hoặc API: ${response.status}`);
+                    }
+                    paginationControls.innerHTML = '';
+                    return;
+                } 
                 const paginatedResponse = await response.json();
 
                 tableBody.innerHTML = '';
@@ -204,13 +224,23 @@ ViewData["Title"] = "Sensor Data";
 
                 paginatedResponse.data.forEach(record => {
                     const row = document.createElement('tr');
-                    row.innerHTML = `<td>${record.id}</td>
-                                        <td class="${getValueClass('temp', record.temperature)}">${record.temperature.toFixed(1)}</td>
-                                        <td class="${getValueClass('hum', record.humidity)}">${record.humidity.toFixed(1)}</td>
-                                        <td>${record.light}</td>
-                                        <td>${formatDateTime(record.timestamp)}</td>`;
+                    row.insertCell(0).textContent = record.id;
+
+                    const tempCell = row.insertCell(1);
+                    tempCell.textContent = record.temperature.toFixed(1);
+                    tempCell.className = getValueClass('temp', record.temperature);
+
+                    const humCell = row.insertCell(2);
+                    humCell.textContent = record.humidity.toFixed(1);
+                    humCell.className = getValueClass('hum', record.humidity);
+
+                    row.insertCell(3).textContent = record.light;
+                    row.insertCell(4).textContent = formatDateTime(record.timestamp);
+
                     tableBody.appendChild(row);
                 });
+                
+                
 
                 renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
             } catch (error) {
@@ -219,7 +249,6 @@ ViewData["Title"] = "Sensor Data";
             }
         }
 
-        // --- HÀM MỚI: TẠO GIAO DIỆN PHÂN TRANG ---
         function renderPagination(totalPages, currentPage) {
             paginationControls.innerHTML = '';
             if (totalPages <= 1) return;
@@ -241,7 +270,6 @@ ViewData["Title"] = "Sensor Data";
                 return li;
             };
 
-            // Nút Previous
             paginationControls.appendChild(createPageItem(currentPage - 1, 'Previous', currentPage === 1));
 
             // Logic hiển thị các nút số trang
@@ -312,21 +340,21 @@ ViewData["Title"] = "Sensor Data";
                 if (!sortBy) return;
 
                 if (currentSortBy === sortBy) {
-                    // Đảo chiều sắp xếp nếu click lại cột cũ
                     currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
                 } else {
-                    // Sắp xếp tăng dần nếu click cột mới
                     currentSortBy = sortBy;
-                    currentSortOrder = 'asc';
+                    currentSortOrder = (sortBy === 'timestamp') ? 'desc' : 'asc';
                 }
                 updateSortUI();
-                loadSensorData(1); // Tải lại dữ liệu từ trang đầu tiên
+                loadSensorData(1);
             });
         });
 
         // --- GẮN CÁC SỰ KIỆN KHÁC ---
         searchButton.addEventListener('click', () => loadSensorData(1));
         pageSizeSelect.addEventListener('change', () => loadSensorData(1));
+        searchTypeSelect.addEventListener('change', () => loadSensorData(1));
+        searchInput.addEventListener('input', debouncedLoadData);
         searchInput.addEventListener('keyup', (event) => {
             if (event.key === 'Enter') {
                 loadSensorData(1);
@@ -355,13 +383,14 @@ ViewData["Title"] = "Sensor Data";
                 tableBody.prepend(row);
 
                 const pageSize = parseInt(pageSizeSelect.value, 10);
-                if (tableBody.rows.length > pageSize) {
+
+                if (tableBody.rows.length > pageSize){
                     tableBody.deleteRow(tableBody.rows.length - 1);
                 }
             }
         });
 
-        // --- KHỞI ĐỘNG KẾT NỐI VÀ TẢI DỮ LIỆU BAN ĐẦU ---
+
         async function start() {
             try {
                 await connection.start();

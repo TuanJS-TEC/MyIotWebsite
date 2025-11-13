@@ -101,21 +101,18 @@ namespace MyIotWebsite.Services
                 {
                     try
                     {
-                        // Dùng JsonDocument để đọc JSON một cách an toàn
                         using (JsonDocument doc = JsonDocument.Parse(payload))
                         {
                             JsonElement root = doc.RootElement;
 
-                            // Kiểm tra và lấy các thuộc tính từ JSON
                             if (root.TryGetProperty("deviceName", out JsonElement deviceNameElement) &&
                                 root.TryGetProperty("isOn", out JsonElement isOnElement))
                             {
                                 string deviceName = deviceNameElement.GetString();
-                                bool isOn = isOnElement.GetBoolean(); // Lấy giá trị boolean
+                                bool isOn = isOnElement.GetBoolean(); 
 
                                 if (!string.IsNullOrEmpty(deviceName))
                                 {
-                                    // Tạo đối tượng ActionHistory mới
                                     var newAction = new ActionHistory
                                     {
                                         DeviceName = deviceName,
@@ -123,11 +120,9 @@ namespace MyIotWebsite.Services
                                         Timestamp = DateTime.UtcNow
                                     };
 
-                                    // Thêm vào CSDL
                                     dbContext.ActionHistories.Add(newAction);
-                                    await dbContext.SaveChangesAsync(); // 1. LƯU THÀNH CÔNG
+                                    await dbContext.SaveChangesAsync(); 
 
-                                    // Đẩy ra giao diện
                                     await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction); 
             
                                     Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");

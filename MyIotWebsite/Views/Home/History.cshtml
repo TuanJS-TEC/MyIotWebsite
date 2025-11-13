@@ -1,251 +1,3 @@
-@* @{ *@
-@*     ViewData["Title"] = "Action History"; *@
-@* } *@
-@* *@
-@* @section Styles { *@
-@* <style> *@
-@*     /* --- CSS CHO VIDEO BACKGROUND & CÁC THẺ CARD --- */ *@
-@*     .video-background-container { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; overflow: hidden; z-index: -2; } *@
-@*     #bg-video { width: 100%; height: 100%; object-fit: cover; } *@
-@*     .video-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.4); z-index: -1; } *@
-@*     body { background-color: transparent; } *@
-@*     .filter-card, .table-card { *@
-@*         background-color: rgba(255, 255, 255, 0.85); *@
-@*         backdrop-filter: blur(10px); *@
-@*         border: 1px solid rgba(255, 255, 255, 0.2); *@
-@*         border-radius: 12px; *@
-@*         box-shadow: 0 4px 12px rgba(0,0,0,0.1); *@
-@*         padding: 1.5rem; *@
-@*     } *@
-@*     h1.display-4, p.lead { *@
-@*         color: #000B58; *@
-@*         text-shadow: 0 1px 3px rgba(0,0,0,0.5); *@
-@*     } *@
-@* *@
-@*     /* CSS cho bảng */ *@
-@*     .table { *@
-@*         background-color: transparent; *@
-@*         color: #212529; *@
-@*     } *@
-@*     .table thead th { *@
-@*         border-bottom-width: 2px; *@
-@*     } *@
-@*     .table td, .table th { *@
-@*         border-top: 1px solid rgba(0,0,0,0.1); *@
-@*     } *@
-@*     .table-hover tbody tr:hover { *@
-@*         background-color: rgba(0, 0, 0, 0.075); *@
-@*     } *@
-@* *@
-@*     .badge.bg-success { background-color: #198754 !important; } *@
-@*     .badge.bg-danger { background-color: #dc3545 !important; } *@
-@* </style> *@
-@* } *@
-@* *@
-@* <div class="video-background-container"> *@
-@*     <div class="video-overlay"></div> *@
-@*     <video playsinline autoplay muted loop id="bg-video"> *@
-@*         <source src="~/videos/background-video.mp4" type="video/mp4"> *@
-@*     </video> *@
-@* </div> *@
-@* *@
-@* <h1 class="display-4" style="color: #000B58;">Lịch sử Hành động</h1> *@
-@* <p class="lead" style="color: #000B58;">Tra cứu và xem lại các thao tác điều khiển thiết bị.</p> *@
-@* *@
-@* <div class="filter-card mb-4"> *@
-@*     <div class="row g-3 align-items-end"> *@
-@*         <div class="col-md-5 col-lg-4"> *@
-@*             <label for="search-input" class="form-label"><i class="fas fa-search me-2"></i>Tìm kiếm</label> *@
-@*             <input type="text" id="search-input" class="form-control" placeholder="Nhập 'bật', 'tắt', giờ, ngày giờ..."> *@
-@*         </div> *@
-@*         <div class="col-md-3 col-lg-3"> *@
-@*             <label for="device-select" class="form-label"><i class="fas fa-robot me-2"></i>Chọn thiết bị</label> *@
-@*             <select id="device-select" class="form-select"> *@
-@*                 <option value="all" selected>Tất cả thiết bị</option> *@
-@*                 <option value="fan">Quạt</option> *@
-@*                 <option value="light">Đèn</option> *@
-@*                 <option value="ac">Điều hòa</option> *@
-@*             </select> *@
-@*         </div> *@
-@*         <div class="col-md-2 col-lg-2"> *@
-@*             <label for="pagesize-select" class="form-label"><i class="fas fa-list-ol me-2"></i>Hiển thị</label> *@
-@*             <select id="pagesize-select" class="form-select"> *@
-@*                 <option value="10" selected>10</option> *@
-@*                 <option value="15">15</option> *@
-@*                 <option value="20">20</option> *@
-@*             </select> *@
-@*         </div> *@
-@*         <div class="col-md-2 col-lg-3"> *@
-@*              <label class="form-label d-none d-md-block">&nbsp;</label> <button id="search-btn" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Tìm kiếm</button> *@
-@*         </div> *@
-@*     </div> *@
-@* </div> *@
-@* *@
-@* *@
-@* <div class="table-card"> *@
-@*     <div class="table-responsive"> *@
-@*         <table class="table table-hover mb-0"> *@
-@*             <thead class="table-light"> *@
-@*                 <tr> *@
-@*                     <th scope="col">ID</th> *@
-@*                     <th scope="col">Thiết bị</th> *@
-@*                     <th scope="col">Hành động</th> *@
-@*                     <th scope="col">Thời gian</th> *@
-@*                 </tr> *@
-@*             </thead> *@
-@*             <tbody id="history-table-body"> *@
-@*             </tbody> *@
-@*         </table> *@
-@*     </div> *@
-@* </div> *@
-@* *@
-@* <nav class="mt-4"> *@
-@*     <ul class="pagination justify-content-center" id="pagination-controls"></ul> *@
-@* </nav> *@
-@* *@
-@* @section Scripts { *@
-@* <script> *@
-@*     const searchInput = document.getElementById('search-input'); *@
-@*     const deviceSelect = document.getElementById('device-select'); *@
-@*     const pageSizeSelect = document.getElementById('pagesize-select'); // Lấy element mới *@
-@*     const searchButton = document.getElementById('search-btn'); *@
-@*     const tableBody = document.getElementById('history-table-body'); *@
-@*     const paginationControls = document.getElementById('pagination-controls'); *@
-@*      *@
-@*     let currentPage = 1; *@
-@* *@
-@*     function getDeviceIcon(deviceName) { *@
-@*         const name = deviceName.toLowerCase(); *@
-@*         if (name.includes('fan')) return '<i class="fas fa-fan text-info me-2"></i>'; *@
-@*         if (name.includes('light') || name.includes('bulb')) return '<i class="fas fa-lightbulb text-warning me-2"></i>'; *@
-@*         if (name.includes('ac')) return '<i class="fas fa-snowflake text-primary me-2"></i>'; *@
-@*         return '<i class="fas fa-toggle-on me-2"></i>'; *@
-@*     } *@
-@* *@
-@*     function formatDateTime(isoString) { *@
-@*         const date = new Date(isoString); *@
-@*         const day = String(date.getDate()).padStart(2, '0'); *@
-@*         const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng trong JS bắt đầu từ 0 *@
-@*         const year = date.getFullYear(); *@
-@*         const hours = String(date.getHours()).padStart(2, '0'); *@
-@*         const minutes = String(date.getMinutes()).padStart(2, '0'); *@
-@*         const seconds = String(date.getSeconds()).padStart(2, '0'); *@
-@* *@
-@*         return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`; *@
-@*     } *@
-@*      *@
-@*     const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build(); *@
-@*     connection.on("ReceiveActionHistory", function (record) { *@
-@*         if (currentPage === 1 && !searchInput.value) { *@
-@*             loadHistoryData(1); *@
-@*         } *@
-@*     }); *@
-@* *@
-@*     async function loadHistoryData(page = 1) { *@
-@*         currentPage = page; *@
-@*         tableBody.innerHTML = `<tr><td colspan="4" class="text-center">Đang tải dữ liệu...</td></tr>`; *@
-@* *@
-@*         try { *@
-@*             const params = new URLSearchParams(); *@
-@*             params.append('deviceName', deviceSelect.value); *@
-@*             params.append('searchTerm', searchInput.value.trim()); *@
-@*             params.append('pageNumber', currentPage); *@
-@*             params.append('pageSize', pageSizeSelect.value); // Lấy giá trị từ ô lựa chọn mới *@
-@* *@
-@*             const apiUrl = `/api/IotApi/actionhistory?${params.toString()}`; *@
-@*             const response = await fetch(apiUrl); *@
-@*              *@
-@*             if (response.status === 404) { *@
-@*                 const errorMessage = await response.text(); *@
-@*                 tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger fw-bold">${errorMessage}</td></tr>`; *@
-@*                 paginationControls.innerHTML = ''; *@
-@*                 return; *@
-@*             } *@
-@* *@
-@*             if (!response.ok) throw new Error("Network response not ok"); *@
-@*              *@
-@*             const paginatedResponse = await response.json(); *@
-@* *@
-@*             tableBody.innerHTML = '';  *@
-@* *@
-@*             if (!paginatedResponse.data || paginatedResponse.data.length === 0) { *@
-@*                 tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-warning">Không có dữ liệu lịch sử nào.</td></tr>`; *@
-@*                 paginationControls.innerHTML = ''; *@
-@*                 return; *@
-@*             } *@
-@* *@
-@*             paginatedResponse.data.forEach(record => { *@
-@*                 const actionBadge = record.isOn  *@
-@*                     ? '<span class="badge bg-success">Bật</span>'  *@
-@*                     : '<span class="badge bg-danger">Tắt</span>'; *@
-@*                 const icon = getDeviceIcon(record.deviceName); *@
-@*                 const formattedDate = formatDateTime(record.timestamp); *@
-@* *@
-@*                 const row = `<tr> *@
-@*                                 <td>${record.id}</td> *@
-@*                                 <td>${icon} ${record.deviceName}</td> *@
-@*                                 <td>${actionBadge}</td> *@
-@*                                 <td>${formattedDate}</td> *@
-@*                              </tr>`; *@
-@*                 tableBody.innerHTML += row; *@
-@*             }); *@
-@* *@
-@*             // ĐOẠN CODE MỚI (LUÔN HIỂN THỊ PHÂN TRANG) *@
-@*             renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber); *@
-@* *@
-@*         } catch (error) { *@
-@*             console.error("Lỗi khi tải lịch sử:", error); *@
-@*             tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Không thể tải dữ liệu. Vui lòng thử lại.</td></tr>`; *@
-@*         } *@
-@*     } *@
-@* *@
-@*     function renderPagination(totalPages, currentPage) { *@
-@*         paginationControls.innerHTML = ''; *@
-@*         if (totalPages <= 1) return; *@
-@* *@
-@*         let html = ''; *@
-@*         html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"> *@
-@*                     <a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${currentPage - 1})">Previous</a> *@
-@*                  </li>`; *@
-@* *@
-@*         for (let i = 1; i <= totalPages; i++) { *@
-@*             html += `<li class="page-item ${i === currentPage ? 'active' : ''}"> *@
-@*                         <a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${i})">${i}</a> *@
-@*                      </li>`; *@
-@*         } *@
-@* *@
-@*         html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"> *@
-@*                     <a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${currentPage + 1})">Next</a> *@
-@*                  </li>`; *@
-@*         paginationControls.innerHTML = html; *@
-@*     } *@
-@* *@
-@*     searchButton.addEventListener('click', () => loadHistoryData(1)); *@
-@*      *@
-@*     searchInput.addEventListener('keyup', function(event) { *@
-@*         if (event.key === 'Enter') { *@
-@*             searchButton.click(); *@
-@*         } *@
-@*     }); *@
-@* *@
-@*     // Thêm sự kiện khi thay đổi số lượng hiển thị, sẽ tải lại dữ liệu từ trang đầu *@
-@*     pageSizeSelect.addEventListener('change', () => loadHistoryData(1)); *@
-@* *@
-@* *@
-@*     async function start() { *@
-@*         try { *@
-@*             await connection.start(); *@
-@*             console.log("SignalR Connected for History page."); *@
-@*             loadHistoryData(1);  *@
-@*         } catch (err) { *@
-@*             console.error(err); *@
-@*             setTimeout(start, 5000); *@
-@*         } *@
-@*     }; *@
-@*     start(); *@
-@* </script> *@
-@* } *@
-
 @{
     ViewData["Title"] = "Action History";
 }
@@ -303,6 +55,7 @@
                 <option value="fan">Quạt</option>
                 <option value="light">Đèn</option>
                 <option value="ac">Điều hòa</option>
+                <option value="Bump"> Bom </option>
             </select>
         </div>
         <div class="col-md-2 col-lg-2">
@@ -351,17 +104,40 @@
 
 @section Scripts {
 <script>
-    // ✅ THAY ĐỔI: Khai báo thêm biến cho dropdown mới
+    
     const searchInput = document.getElementById('search-input');
     const deviceSelect = document.getElementById('device-select');
-    const statusSelect = document.getElementById('status-select'); // Lấy element mới
+    const statusSelect = document.getElementById('status-select'); 
     const pageSizeSelect = document.getElementById('pagesize-select');
     const searchButton = document.getElementById('search-btn');
     const tableBody = document.getElementById('history-table-body');
     const paginationControls = document.getElementById('pagination-controls');
+    const debouncedSearch = debounce(() => loadHistoryData(1),500);
     
     let currentPage = 1;
 
+    function sanitizeHTML(str) {
+        return str.replace(/[&<>"']/g, function(m) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[m];
+        });
+    }
+
+    function debounce(func, delay = 500) {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                func.apply(this, args);
+            }, delay);
+        };
+    }
+    
     function getDeviceIcon(deviceName) {
         const name = deviceName.toLowerCase();
         if (name.includes('fan')) return '<i class="fas fa-fan text-info me-2"></i>';
@@ -371,9 +147,9 @@
     }
 
     function formatDateTime(isoString) {
-        const date = new Date(isoString); // new Date() tự động chuyển đổi chuỗi ISO (UTC) sang giờ cục bộ
+        const date = new Date(isoString); 
         const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng trong JS bắt đầu từ 0
+        const month = String(date.getMonth() + 1).padStart(2, '0'); 
         const year = date.getFullYear();
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -383,10 +159,41 @@
     }
     
     const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
+    // connection.on("ReceiveActionHistory", function (record) {
+    //     if (currentPage === 1 && !searchInput.value && deviceSelect.value === 'all' && statusSelect.value === 'all') {
+    //         loadHistoryData(1);
+    //     }
+    // });
     connection.on("ReceiveActionHistory", function (record) {
-        // Chỉ tải lại nếu đang ở trang đầu và không có bộ lọc nào được áp dụng
-        if (currentPage === 1 && !searchInput.value && deviceSelect.value === 'all' && statusSelect.value === 'all') {
-            loadHistoryData(1);
+        if (currentPage !== 1 || searchInput.value || deviceSelect.value !== 'all' || statusSelect.value !== 'all') {
+            return;
+        }
+
+        const noDataRow = tableBody.querySelector('td[colspan="4"]');
+        if (noDataRow) {
+            noDataRow.parentElement.remove();
+        }
+
+        const actionBadge = record.isOn
+            ? '<span class="badge bg-success">Bật</span>'
+            : '<span class="badge bg-danger">Tắt</span>';
+        const safeDeviceName = sanitizeHTML(record.deviceName);
+        const icon = getDeviceIcon(safeDeviceName);
+        const formattedDate = formatDateTime(record.timestamp);
+
+        const row = `<tr>
+                    <td>${record.id}</td>
+                    <td>${icon} ${safeDeviceName}</td>
+                    <td>${actionBadge}</td>
+                    <td>${formattedDate}</td>
+                 </tr>`;
+
+        tableBody.insertAdjacentHTML('afterbegin', row);
+
+        const rows = tableBody.querySelectorAll('tr');
+        const pageSize = parseInt(pageSizeSelect.value, 10);
+        if (rows.length > pageSize) {
+            rows[rows.length - 1].remove();
         }
     });
 
@@ -422,22 +229,34 @@
                 paginationControls.innerHTML = '';
                 return;
             }
+            
+            let rowsHtml = '';
+            
 
             paginatedResponse.data.forEach(record => {
                 const actionBadge = record.isOn 
                     ? '<span class="badge bg-success">Bật</span>' 
                     : '<span class="badge bg-danger">Tắt</span>';
+                const safeDeviceName = sanitizeHTML(record.deviceName);
                 const icon = getDeviceIcon(record.deviceName);
                 const formattedDate = formatDateTime(record.timestamp);
 
-                const row = `<tr>
-                                <td>${record.id}</td>
-                                <td>${icon} ${record.deviceName}</td>
-                                <td>${actionBadge}</td>
-                                <td>${formattedDate}</td>
-                             </tr>`;
-                tableBody.innerHTML += row;
+                rowsHtml += `<tr>
+                        <td>${record.id}</td>
+                        <td>${icon} ${safeDeviceName}</td>
+                        <td>${actionBadge}</td>
+                        <td>${formattedDate}</td>
+                     </tr>`;
+                // const row = `<tr>
+                //                 <td>${record.id}</td>
+                //                 <td>${icon} ${record.deviceName}</td>
+                //                 <td>${actionBadge}</td>
+                //                 <td>${formattedDate}</td>
+                //              </tr>`;
+                // tableBody.innerHTML += row;
             });
+
+            tableBody.innerHTML = rowsHtml;
             
             renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
 
@@ -473,19 +292,16 @@
             }
         }
 
-        // Nút Previous
         html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
                     <a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${currentPage - 1})">Previous</a>
                  </li>`;
 
-        // Các nút số trang
         for (let i = startPage; i <= endPage; i++) {
             html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
                         <a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${i})">${i}</a>
                      </li>`;
         }
 
-        // Nút Next
         html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
                     <a class="page-link" href="#" onclick="event.preventDefault(); loadHistoryData(${currentPage + 1})">Next</a>
                  </li>`;
@@ -494,21 +310,50 @@
 
     searchButton.addEventListener('click', () => loadHistoryData(1));
     
-    searchInput.addEventListener('keyup', function(event) {
-        if (event.key === 'Enter') {
-            searchButton.click();
-        }
-    });
+    // searchInput.addEventListener('keyup', function(event) {
+    //     if (event.key === 'Enter') {
+    //         searchButton.click();
+    //     }
+    // });
 
+    searchInput.addEventListener('input', debouncedSearch);
+    
     deviceSelect.addEventListener('change', () => loadHistoryData(1));
     statusSelect.addEventListener('change', () => loadHistoryData(1));
     pageSizeSelect.addEventListener('change', () => loadHistoryData(1));
+
+    async function loadDeviceFilters() {
+        try {
+            const response = await fetch('/api/IotApi/devicestates');
+            if (!response.ok) return;
+
+            const devices = await response.json(); // Đây là mảng [ActionHistory]
+            deviceSelect.innerHTML = '<option value="all" selected>Tất cả</option>'; // Reset
+
+            const deviceNames = [...new Set(devices.map(d => d.deviceName))];
+
+            deviceNames.forEach(name => {
+                const safeName = sanitizeHTML(name);
+                const capitalizedName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
+                deviceSelect.innerHTML += `<option value="${safeName.toLowerCase()}">${capitalizedName}</option>`;
+            });
+
+        } catch (error) {
+            console.error("Lỗi khi tải danh sách thiết bị:", error);
+            // Nếu lỗi, vẫn giữ lại các option hardcode (nếu bạn muốn)
+        }
+    }
 
     async function start() {
         try {
             await connection.start();
             console.log("SignalR Connected for History page.");
-            loadHistoryData(1); 
+
+            await Promise.all([
+                loadDeviceFilters(),
+                loadHistoryData(1)  
+            ]);
+
         } catch (err) {
             console.error(err);
             setTimeout(start, 5000);
