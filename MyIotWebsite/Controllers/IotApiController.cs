@@ -58,9 +58,7 @@ namespace MyIotWebsite.Controllers
             [FromQuery] string sortOrder = "desc")
         {
             var query = _context.SensorData.AsQueryable();
-            // =================================================================
             // Phần 1: Lọc dữ liệu (Filtering)
-            // =================================================================
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 if (searchType == "ALL")
@@ -120,10 +118,12 @@ namespace MyIotWebsite.Controllers
                         long.TryParse(searchTerm, out var longId);
 
                         query = query.Where(s => 
-                            (longId != 0 && s.Id == longId) || // Tìm ID chính xác
+                            (longId != 0 && s.Id == longId) || 
                             (s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance) ||
                             (s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance) ||
-                            (s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance)
+                            (s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance) ||
+                            (s.Dust >= numericValue - tolerance && s.Dust <= numericValue + tolerance) ||
+                            (s.Co2 >= numericValue - tolerance && s.Co2 <= numericValue + tolerance)  
                         );
                     }
                 }
@@ -143,6 +143,12 @@ namespace MyIotWebsite.Controllers
                             case "light": 
                                 query = query.Where(s => s.Light == numericValue); 
                                 break;
+                            case "dust": 
+                                query = query.Where(s => Math.Abs(s.Dust - numericValue) <= epsilon); 
+                                break;
+                            case "co2": 
+                                query = query.Where(s => Math.Abs(s.Co2 - numericValue) <= epsilon); 
+                                break;
                             default: 
                                 query = query.Where(s => false); 
                                 break;
@@ -154,9 +160,7 @@ namespace MyIotWebsite.Controllers
                     }
                 }
             }
-            // =================================================================
             // Phần 2: Sắp xếp dữ liệu (Sorting)
-            // =================================================================
             bool isAscending = sortOrder.ToLower() == "asc";
 
             var sortedQuery = (sortBy.ToLower(), isAscending) switch
@@ -169,15 +173,15 @@ namespace MyIotWebsite.Controllers
                 ("humidity", false) => query.OrderByDescending(s => s.Humidity),
                 ("light", true) => query.OrderBy(s => s.Light),
                 ("light", false) => query.OrderByDescending(s => s.Light),
+                ("dust", true) => query.OrderBy(s => s.Dust), 
+                ("dust", false) => query.OrderByDescending(s => s.Dust), 
+                ("co2", true) => query.OrderBy(s => s.Co2), 
+                ("co2", false) => query.OrderByDescending(s => s.Co2), 
                 ("timestamp", true) => query.OrderBy(s => s.Timestamp),
-
                 _ => query.OrderByDescending(s => s.Timestamp) 
             };
-    
-            // =================================================================
+
             // Phần 3: Phân trang (Pagination)
-            // =================================================================
-    
             var totalRecords = await sortedQuery.CountAsync();
 
             var pagedData = await sortedQuery
@@ -195,21 +199,39 @@ namespace MyIotWebsite.Controllers
         }
         
         // --- API CHO THIẾT BỊ ---
-
         [HttpGet("devicestates")]
         public async Task<ActionResult<IEnumerable<ActionHistory>>> GetDeviceStates()
         {
-            var latestStatesQuery = _context.ActionHistories
-                .GroupBy(h => h.DeviceName)
-                .Select(group => group.OrderByDescending(h => h.Timestamp).FirstOrDefault());
-
-            var latestStates = await latestStatesQuery
-                .Where(h => h != null) 
-                .ToListAsync();
-
-            return Ok(latestStates);
+            try
+            {
+                var deviceNames = await _context.ActionHistories
+                    .Select(h => h.DeviceName)
+                    .Distinct()
+                    .ToListAsync();
+        
+                var latestStates = new List<ActionHistory>();
+        
+                foreach (var name in deviceNames)
+                {
+                    var latest = await _context.ActionHistories
+                        .Where(h => h.DeviceName == name)
+                        .OrderByDescending(h => h.Timestamp)
+                        .FirstOrDefaultAsync();
+            
+                    if (latest != null)
+                    {
+                        latestStates.Add(latest);
+                    }
+                }
+        
+                return Ok(latestStates.OrderBy(s => s.DeviceName));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetDeviceStates: {ex.Message}");
+                return StatusCode(500, "Internal server error retrieving device states.");
+            }
         }
-
         [HttpPost("devices/{deviceName}/toggle")]
         public async Task<IActionResult> ToggleDevice(string deviceName)
         {
@@ -220,7 +242,7 @@ namespace MyIotWebsite.Controllers
                 .OrderByDescending(h => h.Timestamp).FirstOrDefaultAsync();
                 
             bool currentStateIsOn = lastState?.IsOn ?? false;
-
+            
             try
             {
                 string deviceControlName = deviceName.ToLower() == "light" ? "bulb" : deviceName.ToLower();
@@ -235,7 +257,6 @@ namespace MyIotWebsite.Controllers
         }
         
         // --- API CHO LỊCH SỬ ---
-
         [HttpGet("actionhistory")]
         public async Task<ActionResult<PaginatedResponse<ActionHistory>>> GetActionHistory(
             [FromQuery] string? searchTerm,

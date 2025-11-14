@@ -18,6 +18,14 @@ namespace MyIotWebsite.Models
         [Column("light")] 
         public double Light { get; set; }
 
+        // --- BỔ SUNG MỚI ---
+        [Column("dust")]
+        public double Dust { get; set; }
+
+        [Column("co2")]
+        public double Co2 { get; set; }
+        // --- KẾT THÚC BỔ SUNG ---
+
         [Column("timestamp")] 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }

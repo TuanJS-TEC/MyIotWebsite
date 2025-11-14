@@ -41,8 +41,13 @@ ViewData["Title"] = "Sensor Data";
     .new-row-highlight { animation: highlightFade 2s ease-out; }
     @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @@keyframes highlightFade { 0% { background-color: #fff3cd; } 100% { background-color: transparent; } }
+
+    /* --- CSS CHO CÁC GIÁ TRỊ --- */
     .text-value-high { color: #dc3545; font-weight: 500; }
     .text-value-low { color: #0d6efd; font-weight: 500; }
+    .text-value-dust { color: #6c757d; font-weight: 500; } /* Màu cho Bụi */
+    .text-value-co2 { color: #198754; font-weight: 500; }  /* Màu cho CO2 */
+
 
     /* --- CSS CHO SẮP XẾP --- */
     .sortable {
@@ -56,7 +61,7 @@ ViewData["Title"] = "Sensor Data";
         color: #adb5bd;
         margin-left: 5px;
         transition: color 0.2s, transform 0.2s;
-        display: inline-block; 
+        display: inline-block;
     }
     .sortable.sorted .sort-icon {
         color: #000;
@@ -65,7 +70,7 @@ ViewData["Title"] = "Sensor Data";
         transform: rotate(0deg);
     }
     .sortable.desc .sort-icon {
-        transform: rotate(180deg); 
+        transform: rotate(180deg);
     }
 
 </style>
@@ -94,6 +99,8 @@ ViewData["Title"] = "Sensor Data";
                 <option value="temperature">Nhiệt độ</option>
                 <option value="humidity">Độ ẩm</option>
                 <option value="light">Ánh sáng</option>
+                <option value="dust">Độ Bụi</option>
+                <option value="co2">CO2</option>
             </select>
         </div>
         <div class="col-md-2">
@@ -120,6 +127,8 @@ ViewData["Title"] = "Sensor Data";
             <th class="sortable" data-sortby="temperature">Nhiệt độ (°C) <i class="fas fa-sort-down sort-icon"></i></th>
             <th class="sortable" data-sortby="humidity">Độ ẩm (%) <i class="fas fa-sort-down sort-icon"></i></th>
             <th class="sortable" data-sortby="light">Ánh sáng (%)<i class="fas fa-sort-down sort-icon"></i></th>
+            <th class="sortable" data-sortby="dust">Bụi (PM2.5) <i class="fas fa-sort-down sort-icon"></i></th>
+            <th class="sortable" data-sortby="co2">CO2 <i class="fas fa-sort-down sort-icon"></i></th>
             <th class="sortable sorted desc" data-sortby="timestamp">Thời gian <i class="fas fa-sort-down sort-icon"></i></th>
         </tr>
         </thead>
@@ -133,7 +142,6 @@ ViewData["Title"] = "Sensor Data";
 
 @section Scripts {
 <script>
-    
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.getElementById('search-input');
         const searchTypeSelect = document.getElementById('search-type-select');
@@ -144,7 +152,7 @@ ViewData["Title"] = "Sensor Data";
         const tableHeaders = document.querySelectorAll('.sortable');
 
         let currentPage = 1;
-        let currentSortBy = 'timestamp'; 
+        let currentSortBy = 'timestamp';
         let currentSortOrder = 'desc';
 
         function debounce(func, delay = 500) {
@@ -157,12 +165,12 @@ ViewData["Title"] = "Sensor Data";
             };
         }
         const debouncedLoadData = debounce(() => loadSensorData(1), 500);
-        
+
         function formatDateTime(dateString) {
             const date = new Date(dateString);
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear().toString().slice(-2); 
+            const year = date.getFullYear().toString().slice(-2);
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             const seconds = String(date.getSeconds()).padStart(2, '0');
@@ -178,12 +186,18 @@ ViewData["Title"] = "Sensor Data";
                 if (value > 80) return 'text-value-high';
                 if (value < 40) return 'text-value-low';
             }
+            if (type === 'dust') {
+                if (value > 500) return 'text-value-dust';
+            }
+            if (type === 'co2') {
+                if (value > 50) return 'text-value-co2';
+            }
             return '';
         }
 
         async function loadSensorData(page = 1) {
             currentPage = page;
-            tableBody.innerHTML = `<tr><td colspan="5" class="text-center">Đang tải dữ liệu...</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center">Đang tải dữ liệu...</td></tr>`; 
             try {
                 const params = new URLSearchParams();
                 if (searchInput.value) {
@@ -192,8 +206,8 @@ ViewData["Title"] = "Sensor Data";
                 params.append('searchType', searchTypeSelect.value);
                 params.append('pageNumber', currentPage);
                 params.append('pageSize', pageSizeSelect.value);
-                params.append('sortBy', currentSortBy);    
-                params.append('sortOrder', currentSortOrder); 
+                params.append('sortBy', currentSortBy);
+                params.append('sortOrder', currentSortOrder);
 
                 const apiUrl = `/api/IotApi/sensordata/search?${params.toString()}`;
                 const response = await fetch(apiUrl);
@@ -201,13 +215,13 @@ ViewData["Title"] = "Sensor Data";
                 if (!response.ok){
                     if (response.status === 404) {
                         const errorMessage = await response.text();
-                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-3">${errorMessage}</td></tr>`;
+                        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger p-3">${errorMessage}</td></tr>`; // Cập nhật colspan
                     } else {
                         throw new Error(`Lỗi máy chủ hoặc API: ${response.status}`);
                     }
                     paginationControls.innerHTML = '';
                     return;
-                } 
+                }
                 const paginatedResponse = await response.json();
 
                 tableBody.innerHTML = '';
@@ -216,13 +230,15 @@ ViewData["Title"] = "Sensor Data";
                     const message = searchInput.value
                         ? "Không tồn tại bất kỳ giá trị nào như bạn yêu cầu."
                         : "Chưa có dữ liệu nào.";
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-warning p-3">${message}</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-warning p-3">${message}</td></tr>`; // Cập nhật colspan
                     paginationControls.innerHTML = '';
                     return;
                 }
 
                 paginatedResponse.data.forEach(record => {
                     const row = document.createElement('tr');
+
+                    // --- CẬP NHẬT LOGIC VẼ BẢNG ---
                     row.insertCell(0).textContent = record.id;
 
                     const tempCell = row.insertCell(1);
@@ -234,14 +250,24 @@ ViewData["Title"] = "Sensor Data";
                     humCell.className = getValueClass('hum', record.humidity);
 
                     row.insertCell(3).textContent = record.light;
-                    row.insertCell(4).textContent = formatDateTime(record.timestamp);
+
+                    const dustCell = row.insertCell(4);
+                    dustCell.textContent = record.dust.toFixed(0);
+                    dustCell.className = getValueClass('dust', record.dust);
+
+                    const co2Cell = row.insertCell(5);
+                    co2Cell.textContent = record.co2.toFixed(0);
+                    co2Cell.className = getValueClass('co2', record.co2);
+
+                    row.insertCell(6).textContent = formatDateTime(record.timestamp);
+                    // --- KẾT THÚC CẬP NHẬT ---
 
                     tableBody.appendChild(row);
                 });
                 renderPagination(paginatedResponse.totalPages, paginatedResponse.pageNumber);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu:", error);
-                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger p-3">Không thể tải dữ liệu. Vui lòng thử lại.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger p-3">Không thể tải dữ liệu. Vui lòng thử lại.</td></tr>';
             }
         }
 
@@ -354,7 +380,6 @@ ViewData["Title"] = "Sensor Data";
             }
         });
 
-        // --- LOGIC SIGNALR  ---
         const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
         connection.on("ReceiveSensorData", function (record) {
             if (currentPage === 1 && !searchInput.value && currentSortBy === 'timestamp' && currentSortOrder === 'desc') {
@@ -372,7 +397,9 @@ ViewData["Title"] = "Sensor Data";
                                     <td class="${getValueClass('temp', record.temperature)}">${record.temperature.toFixed(1)}</td>
                                     <td class="${getValueClass('hum', record.humidity)}">${record.humidity.toFixed(1)}</td>
                                     <td>${record.light}</td>
-                                    <td>${formatDateTime(record.timestamp)}</td>`; // Sử dụng hàm mới
+                                    <td class="${getValueClass('dust', record.dust)}">${record.dust.toFixed(0)}</td>
+                                    <td class="${getValueClass('co2', record.co2)}">${record.co2.toFixed(0)}</td>
+                                    <td>${formatDateTime(record.timestamp)}</td>`; 
                 tableBody.prepend(row);
 
                 const pageSize = parseInt(pageSizeSelect.value, 10);
@@ -383,16 +410,15 @@ ViewData["Title"] = "Sensor Data";
             }
         });
 
-
         async function start() {
             try {
                 await connection.start();
                 console.log("SignalR Connected.");
-                updateSortUI(); 
-                await loadSensorData(1); 
+                updateSortUI();
+                await loadSensorData(1);
             } catch (err) {
                 console.error("Lỗi SignalR: ", err);
-                setTimeout(start, 5000); 
+                setTimeout(start, 5000);
             }
         }
 

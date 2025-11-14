@@ -16,9 +16,8 @@ namespace MyIotWebsite.Services
         private readonly IHubContext<SensorHub> _hubContext;
         private readonly IManagedMqttClient _mqttClient;
         private readonly ManagedMqttClientOptions _mqttOptions; 
-
         // Thông tin MQTT Broker
-        private const string MqttServer = "192.168.0.107";
+        private const string MqttServer = "172.20.10.4";
         private const int MqttPort = 1883;
         private const string MqttUser = "HoangMinhTuan";
         private const string MqttPassword = "123";
@@ -41,16 +40,13 @@ namespace MyIotWebsite.Services
             _mqttClient.ApplicationMessageReceivedAsync += OnMqttMessageReceived;
 
         }
-
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
-                // 1. Kết nối tới broker
                 await _mqttClient.StartAsync(_mqttOptions);
                 Console.WriteLine("MQTT client started successfully.");
 
-                // 2. Subcribe các topic
                 await _mqttClient.SubscribeAsync("sensor/data");
                 await _mqttClient.SubscribeAsync("status/device");
                 Console.WriteLine("MQTT client subscribed to topics.");
@@ -61,13 +57,7 @@ namespace MyIotWebsite.Services
                 Console.WriteLine($"[FATAL ERROR] Details: {ex.Message}");
                 throw; 
             }
-            
-            // catch (Exception ex)
-            // {
-            //     Console.WriteLine($"Failed to start or subscribe MQTT client: {ex.Message}");
-            // }
         }
-
         public async Task PublishAsync(string topic, string payload)
         {
             var message = new MqttApplicationMessageBuilder()
@@ -77,7 +67,6 @@ namespace MyIotWebsite.Services
             
             await _mqttClient.EnqueueAsync(message);
         }
-
         private async Task OnMqttMessageReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             var topic = e.ApplicationMessage.Topic;
@@ -93,16 +82,21 @@ namespace MyIotWebsite.Services
                 if (topic == "sensor/data")
                 {
                     var parts = payload.Split(',');
-                    if (parts.Length == 3 &&
+                    
+                    if (parts.Length == 5 &&
                         double.TryParse(parts[0], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double temp) &&
                         double.TryParse(parts[1], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double hum) &&
-                        double.TryParse(parts[2], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double light))
+                        double.TryParse(parts[2], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double light) &&
+                        double.TryParse(parts[3], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double dust) &&
+                        double.TryParse(parts[4], System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double co2))
                     {
                         var sensorData = new SensorData
                         {
                             Temperature = temp,
                             Humidity = hum,
                             Light = light,
+                            Dust = dust,
+                            Co2 = co2,
                             Timestamp = DateTime.UtcNow
                         };
 
@@ -110,15 +104,39 @@ namespace MyIotWebsite.Services
                         await dbContext.SaveChangesAsync();
                         await hubContext.Clients.All.SendAsync("ReceiveSensorData", sensorData);
 
-                        Console.WriteLine("Sensor data saved to DB and pushed via SignalR.");
+                        Console.WriteLine("Sensor data (5 values) saved to DB and pushed via SignalR.");
+
+                        // --- LOGIC CẢNH BÁO MỚI ---
+                        try
+                        {
+                            // Ngưỡng: Dust > 500 (50% của 1000) VÀ Co2 > 50 (50% của 100)
+                            if (dust > 500 && co2 > 50)
+                            {
+                                // Gửi lệnh bật LED cảnh báo
+                                await PublishAsync("control/alarm", "alarm_on");
+                                Console.WriteLine("ALARM TRIGGERED: Dust or CO2 exceeded threshold. Sent 'alarm_on'.");
+                            }
+                            else
+                            {
+                                // Gửi lệnh tắt LED cảnh báo (nếu không vượt ngưỡng)
+                                await PublishAsync("control/alarm", "alarm_off");
+                                Console.WriteLine("ALARM OFF: Levels are normal. Sent 'alarm_off'.");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error publishing alarm MQTT message: {ex.Message}");
+                        }
+                        // --- KẾT THÚC LOGIC CẢNH BÁO ---
                     }
                     else
                     {
-                        Console.WriteLine("Failed to parse sensor data payload.");
+                        Console.WriteLine($"Failed to parse sensor data payload. Expected 5 parts, but got {parts.Length}. Payload: {payload}");
                     }
                 }
                 else if (topic == "status/device")
                 {
+                    // (Giữ nguyên không thay đổi)
                     try
                     {
                         using (JsonDocument doc = JsonDocument.Parse(payload))
@@ -142,9 +160,7 @@ namespace MyIotWebsite.Services
 
                                     dbContext.ActionHistories.Add(newAction);
                                     await dbContext.SaveChangesAsync();
-
                                     await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction);
-
                                     Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");
                                 }
                             }
