@@ -1,0 +1,42 @@
+body {
+    background-color: #121212;
+}
+
+.profile-page-wrapper {
+    padding: 4rem 0;
+    align-items: center;
+    min-height: 90vh;
+    display: flex;
+    justify-content: center;
+}
+.profile-card, .tech-showcase {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 2.5rem;
+    height: 100%;
+    color: #134686;
+}
+
+.profile-avatar {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 5px solid rgb(0, 49, 97);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.user-title { color: #134686; }
+.info-item a { color: #134686; }
+.info-item i { color: #134686; }
+.tech-showcase h2 { color: #134686; }
+.tech-item h5 { color: #134686; }
+.tech-item p { color: #134686; }
+.tech-item i { color: #134686; }
+
+@@media (max-width: 991.98px) {
+    .profile-card { margin-bottom: 2rem; }
+}

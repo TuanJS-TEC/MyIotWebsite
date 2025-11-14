@@ -1,0 +1,110 @@
+/* ========================
+   CARD FILTER (khung tìm kiếm)
+   ======================== */
+.filter-card {
+    /* Đây là style bạn đã cung cấp */
+    background-color: #f7f3ec;    /* màu be nhạt */
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e2ddd3;
+
+    /* * Chúng ta dùng lại style nền kính mờ mà bạn dùng ở các trang khác
+     * Nếu bạn muốn dùng nền "màu be" #f7f3ec, hãy xóa 4 dòng dưới
+     * và bỏ comment 4 dòng trên.
+    */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.filter-card .form-label {
+    font-weight: 600;
+}
+
+.filter-card .form-control,
+.filter-card .form-select {
+    /* * Style input này thuộc về theme "màu be". 
+     * Nếu bạn dùng nền kính mờ, style này có thể không hợp.
+     * Hãy giữ lại hoặc xóa tùy theo theme bạn chọn.
+    */
+    background-color: #fffdf8;    /* be rất nhạt */
+    border-radius: 8px;
+    border: 1px solid #d8d2c4;
+}
+
+.filter-card .form-control:focus,
+.filter-card .form-select:focus {
+    border-color: #b9b3a6;
+    box-shadow: 0 0 0 0.1rem rgba(185, 179, 166, 0.3);
+}
+
+#search-btn {
+    border-radius: 10px;
+}
+
+/* ========================
+   TABLE CARD (Bảng dữ liệu)
+   ======================== */
+.table-card {
+    /* Tương tự, chọn 1 trong 2 theme (kính mờ hoặc màu be) */
+
+    /* Theme màu be */
+    /* background-color: #f7f3ec;  */
+    /* border: 1px solid #e2ddd3; */
+
+    /* Theme kính mờ */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.table-card thead {
+    /* background-color: #f0ebe1; */ /* Theme màu be */
+    background-color: #FDEB9E; /* Theme kính mờ (màu vàng bạn dùng ở SensorData) */
+    color: #000B58;
+}
+
+/* Body table màu xen kẽ */
+#history-table-body tr:nth-child(even) {
+    background-color: #fffdf8;   /* be siêu nhạt */
+}
+
+#history-table-body tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Hover row */
+#history-table-body tr:hover {
+    background-color: #f1e9dc; /* Theme màu be */
+    /* background-color: #cfe8ff; */ /* Theme kính mờ */
+}
+
+/* Bo góc cho hàng đầu và hàng cuối */
+#history-table-body tr:first-child td:first-child {
+    border-top-left-radius: 10px;
+}
+
+#history-table-body tr:first-child td:last-child {
+    border-top-right-radius: 10px;
+}
+
+#history-table-body tr:last-child td:first-child {
+    border-bottom-left-radius: 10px;
+}
+
+#history-table-body tr:last-child td:last-child {
+    border-bottom-right-radius: 10px;
+}
+
+/* Badge ( Huy hiệu) */
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}

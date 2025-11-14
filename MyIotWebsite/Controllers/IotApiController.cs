@@ -30,7 +30,7 @@ namespace MyIotWebsite.Controllers
             _env = env;
             _hubContext = hubContext;
         }
-
+        
         // --- API CHO SENSOR DATA ---
         [HttpGet("sensordata/latest")]
         public async Task<ActionResult<SensorData>> GetLatestSensorData()
@@ -114,7 +114,7 @@ namespace MyIotWebsite.Controllers
                     else if (double.TryParse(searchTerm, NumberStyles.Any, CultureInfo.InvariantCulture,
                                  out var numericValue))
                     {
-                        double tolerance = 0.0001; 
+                        double tolerance = 0.1; 
                         long.TryParse(searchTerm, out var longId);
 
                         query = query.Where(s => 
@@ -196,6 +196,50 @@ namespace MyIotWebsite.Controllers
                 TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
             };
             return Ok(response);
+        }
+
+        [HttpDelete("sensordata/delete-old")]
+        public async Task<IActionResult> DeleteOldSensorData(
+            [FromQuery] string startDate, 
+            [FromQuery] string endDate)
+        {
+            if (!DateTime.TryParseExact(startDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedStartDate))
+            {
+                return BadRequest(new { message = "Định dạng Ngày Bắt Đầu không hợp lệ. Vui lòng sử dụng 'yyyy-MM-dd'." });
+            }
+
+            if (!DateTime.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedEndDate))
+            {
+                return BadRequest(new { message = "Định dạng Ngày Kết Thúc không hợp lệ. Vui lòng sử dụng 'yyyy-MM-dd'." });
+            }
+
+            if (parsedStartDate > parsedEndDate)
+            {
+                return BadRequest(new { message = "Ngày Bắt Đầu phải trước hoặc bằng Ngày Kết Thúc." });
+            }
+
+            if (parsedEndDate >= DateTime.Today)
+            {
+                 return BadRequest(new { message = "Ngày Kết Thúc phải là một ngày trong quá khứ. Không thể xóa dữ liệu của ngày hôm nay hoặc tương lai." });
+            }
+            DateTime localStartDate = DateTime.SpecifyKind(parsedStartDate, DateTimeKind.Local);
+            DateTime startDateUtc = localStartDate.ToUniversalTime();
+
+            DateTime localEndDate = DateTime.SpecifyKind(parsedEndDate.AddDays(1), DateTimeKind.Local);
+            DateTime endDateUtc = localEndDate.ToUniversalTime();
+            try
+            {
+                var recordsDeleted = await _context.SensorData
+                    .Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc)
+                    .ExecuteDeleteAsync();
+
+                return Ok(new { message = $"Đã xóa thành công {recordsDeleted} bản ghi dữ liệu cảm biến (từ {parsedStartDate:dd/MM/yyyy} đến {parsedEndDate:dd/MM/yyyy})." });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi xóa dữ liệu theo khoảng ngày: {ex.Message}");
+                return StatusCode(500, new { message = $"Lỗi máy chủ khi xóa dữ liệu. {ex.Message}" });
+            }
         }
         
         // --- API CHO THIẾT BỊ ---

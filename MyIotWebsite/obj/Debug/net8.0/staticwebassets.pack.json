@@ -5,6 +5,22 @@
       "PackagePath": "staticwebassets/MyIotWebsite.bundle.scp.css"
     },
     {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/css/pages/Index.css",
+      "PackagePath": "staticwebassets/css/pages/Index.css"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/css/pages/Profile.css",
+      "PackagePath": "staticwebassets/css/pages/Profile.css"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/css/pages/SensorData.css",
+      "PackagePath": "staticwebassets/css/pages/SensorData.css"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/css/pages/history.css",
+      "PackagePath": "staticwebassets/css/pages/history.css"
+    },
+    {
       "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/css/site.css",
       "PackagePath": "staticwebassets/css/site.css"
     },
@@ -31,6 +47,18 @@
     {
       "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/icons/MQTT Horizontal Neg.svg",
       "PackagePath": "staticwebassets/icons/MQTT Horizontal Neg.svg"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/js/pages/History.js",
+      "PackagePath": "staticwebassets/js/pages/History.js"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/js/pages/Index.js",
+      "PackagePath": "staticwebassets/js/pages/Index.js"
+    },
+    {
+      "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/js/pages/SensorData.js",
+      "PackagePath": "staticwebassets/js/pages/SensorData.js"
     },
     {
       "Id": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite/MyIotWebsite/wwwroot/js/site.js",

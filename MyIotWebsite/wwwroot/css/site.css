@@ -1,66 +1,90 @@
+/* ========================
+   CÀI ĐẶT CHUNG & LAYOUT
+   ======================== */
+<script>
+/*// Apply theme immediately to avoid flashing*/
+    (function () {
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+    })();
+</script>
+
 html {
-  font-size: 14px;
+    font-size: 14px;
+    height: 100%;
+    position: relative;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
-body {
-  margin-bottom: 60px;
-}
-
-
-html {
-    height: 100%;
+    html {
+        font-size: 16px;
+    }
 }
 
 body {
     display: flex;
     flex-direction: column;
-
     min-height: 100%;
+    /* Áp dụng để video nền hiển thị */
+    background-color: transparent;
 }
 
+/* * Áp dụng flex-grow cho <main> 
+ * (Giả định bạn dùng <main> trong _Layout.cshtml)
+*/
 main[role="main"] {
     flex-grow: 1;
 }
 
-.navbar {
-    /* 1. Đổi màu nền thành màu trắng có độ trong suốt */
-    background-color: rgba(255, 255, 255, 0.1) !important;
-
-    /* 2. Áp dụng hiệu ứng làm mờ */
-    backdrop-filter: blur(10px);
-
-    /* 3. Thêm một đường viền mỏng để navbar nổi bật hơn */
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
-}
-
-html {
-    height: 100%;
-}
-
-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-}
-
-/* * Sửa lại: Áp dụng flex-grow cho thẻ div.container là con trực tiếp của body.
- * Đây là thẻ chứa @RenderBody() trong file _Layout.cshtml.
+/* * Nếu bạn không dùng <main>, nhưng dùng <div class="container"> 
+ * thì dùng code này thay thế code main[role="main"] ở trên:
+ * body > .container {
+ * flex-grow: 1;
+ * }
 */
-body > .container {
-    flex-grow: 1;
+
+
+/* ========================
+   VIDEO BACKGROUND (Toàn cục)
+   ======================== */
+.video-background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    z-index: -2;
+}
+
+#bg-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: -1;
+}
+
+/* ========================
+   TINH CHỈNH BOOTSTRAP (Toàn cục)
+   ======================== */
+
+/* Hiệu ứng focus */
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+/* Navbar kính mờ (Toàn cục) */
+.navbar {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
 }

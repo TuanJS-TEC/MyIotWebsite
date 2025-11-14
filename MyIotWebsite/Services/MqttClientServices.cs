@@ -17,7 +17,7 @@ namespace MyIotWebsite.Services
         private readonly IManagedMqttClient _mqttClient;
         private readonly ManagedMqttClientOptions _mqttOptions; 
         // Thông tin MQTT Broker
-        private const string MqttServer = "172.20.10.4";
+        private const string MqttServer = "192.168.0.107";
         private const int MqttPort = 1883;
         private const string MqttUser = "HoangMinhTuan";
         private const string MqttPassword = "123";
@@ -109,16 +109,13 @@ namespace MyIotWebsite.Services
                         // --- LOGIC CẢNH BÁO MỚI ---
                         try
                         {
-                            // Ngưỡng: Dust > 500 (50% của 1000) VÀ Co2 > 50 (50% của 100)
                             if (dust > 500 && co2 > 50)
                             {
-                                // Gửi lệnh bật LED cảnh báo
                                 await PublishAsync("control/alarm", "alarm_on");
                                 Console.WriteLine("ALARM TRIGGERED: Dust or CO2 exceeded threshold. Sent 'alarm_on'.");
                             }
                             else
                             {
-                                // Gửi lệnh tắt LED cảnh báo (nếu không vượt ngưỡng)
                                 await PublishAsync("control/alarm", "alarm_off");
                                 Console.WriteLine("ALARM OFF: Levels are normal. Sent 'alarm_off'.");
                             }
@@ -127,7 +124,6 @@ namespace MyIotWebsite.Services
                         {
                             Console.WriteLine($"Error publishing alarm MQTT message: {ex.Message}");
                         }
-                        // --- KẾT THÚC LOGIC CẢNH BÁO ---
                     }
                     else
                     {
