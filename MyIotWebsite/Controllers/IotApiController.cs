@@ -14,6 +14,7 @@ namespace MyIotWebsite.Controllers
     [ApiController]
     public class IotApiController : ControllerBase
     {
+        // --- KONFIGURATION & ABHÄNGIGKEITEN ---
         private readonly ApplicationDbContext _context;
         private readonly MqttClientService _mqttService;
         private readonly IWebHostEnvironment _env;
@@ -31,7 +32,9 @@ namespace MyIotWebsite.Controllers
             _hubContext = hubContext;
         }
         
-        // --- API CHO SENSOR DATA ---
+        // --- API FÜR SENSOR DATA (Monitoring) ---
+        
+        // 1. Aktuelle Werte (Dashboard Widget)
         [HttpGet("sensordata/latest")]
         public async Task<ActionResult<SensorData>> GetLatestSensorData()
         {
@@ -40,6 +43,7 @@ namespace MyIotWebsite.Controllers
             return Ok(latestData);
         }
 
+        // 2. Kurze Historie (Dashboard Chart)
         [HttpGet("sensordata/history")]
         public async Task<ActionResult<IEnumerable<SensorData>>> GetSensorDataHistory()
         {
@@ -48,6 +52,7 @@ namespace MyIotWebsite.Controllers
             return Ok(historyData);
         }
         
+        // 3. Erweiterte Suche (Daten-Tabelle)
         [HttpGet("sensordata/search")]
         public async Task<ActionResult<PaginatedResponse<SensorData>>> SearchAllSensors(
             [FromQuery] string? searchTerm,
@@ -58,7 +63,7 @@ namespace MyIotWebsite.Controllers
             [FromQuery] string sortOrder = "desc")
         {
             var query = _context.SensorData.AsQueryable();
-            // Phần 1: Lọc dữ liệu (Filtering)
+            // TEIL 1: DATENFILTERUNG (FILTERING)
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 if (searchType == "ALL")
@@ -160,7 +165,7 @@ namespace MyIotWebsite.Controllers
                     }
                 }
             }
-            // Phần 2: Sắp xếp dữ liệu (Sorting)
+            // TEIL 2: DATENSORTIERUNG (SORTING)
             bool isAscending = sortOrder.ToLower() == "asc";
 
             var sortedQuery = (sortBy.ToLower(), isAscending) switch
@@ -181,7 +186,7 @@ namespace MyIotWebsite.Controllers
                 _ => query.OrderByDescending(s => s.Timestamp) 
             };
 
-            // Phần 3: Phân trang (Pagination)
+            // TEIL 3: SEITENNUMMERIERUNG (PAGINATION)
             var totalRecords = await sortedQuery.CountAsync();
 
             var pagedData = await sortedQuery
@@ -198,51 +203,9 @@ namespace MyIotWebsite.Controllers
             return Ok(response);
         }
 
-        [HttpDelete("sensordata/delete-old")]
-        public async Task<IActionResult> DeleteOldSensorData(
-            [FromQuery] string startDate, 
-            [FromQuery] string endDate)
-        {
-            if (!DateTime.TryParseExact(startDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedStartDate))
-            {
-                return BadRequest(new { message = "Định dạng Ngày Bắt Đầu không hợp lệ. Vui lòng sử dụng 'yyyy-MM-dd'." });
-            }
+        // --- API FÜR GERÄT (Control) ---
 
-            if (!DateTime.TryParseExact(endDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedEndDate))
-            {
-                return BadRequest(new { message = "Định dạng Ngày Kết Thúc không hợp lệ. Vui lòng sử dụng 'yyyy-MM-dd'." });
-            }
-
-            if (parsedStartDate > parsedEndDate)
-            {
-                return BadRequest(new { message = "Ngày Bắt Đầu phải trước hoặc bằng Ngày Kết Thúc." });
-            }
-
-            if (parsedEndDate >= DateTime.Today)
-            {
-                 return BadRequest(new { message = "Ngày Kết Thúc phải là một ngày trong quá khứ. Không thể xóa dữ liệu của ngày hôm nay hoặc tương lai." });
-            }
-            DateTime localStartDate = DateTime.SpecifyKind(parsedStartDate, DateTimeKind.Local);
-            DateTime startDateUtc = localStartDate.ToUniversalTime();
-
-            DateTime localEndDate = DateTime.SpecifyKind(parsedEndDate.AddDays(1), DateTimeKind.Local);
-            DateTime endDateUtc = localEndDate.ToUniversalTime();
-            try
-            {
-                var recordsDeleted = await _context.SensorData
-                    .Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc)
-                    .ExecuteDeleteAsync();
-
-                return Ok(new { message = $"Đã xóa thành công {recordsDeleted} bản ghi dữ liệu cảm biến (từ {parsedStartDate:dd/MM/yyyy} đến {parsedEndDate:dd/MM/yyyy})." });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Lỗi khi xóa dữ liệu theo khoảng ngày: {ex.Message}");
-                return StatusCode(500, new { message = $"Lỗi máy chủ khi xóa dữ liệu. {ex.Message}" });
-            }
-        }
-        
-        // --- API CHO THIẾT BỊ ---
+        // 1. Status abfragen (Read)
         [HttpGet("devicestates")]
         public async Task<ActionResult<IEnumerable<ActionHistory>>> GetDeviceStates()
         {
@@ -276,6 +239,8 @@ namespace MyIotWebsite.Controllers
                 return StatusCode(500, "Internal server error retrieving device states.");
             }
         }
+
+        // 2. Gerät schalten (Write/Action)
         [HttpPost("devices/{deviceName}/toggle")]
         public async Task<IActionResult> ToggleDevice(string deviceName)
         {
@@ -300,7 +265,9 @@ namespace MyIotWebsite.Controllers
             }
         }
         
-        // --- API CHO LỊCH SỬ ---
+        // --- API FÜR VERLAUFS-HISTORIE (Logs & Audit) ---
+
+        // 1. Logbuch durchsuchen (Report)
         [HttpGet("actionhistory")]
         public async Task<ActionResult<PaginatedResponse<ActionHistory>>> GetActionHistory(
             [FromQuery] string? searchTerm,

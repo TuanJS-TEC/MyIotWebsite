@@ -2,6 +2,85 @@ let sensorChart;
 let dustCo2Chart;
 const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
 
+// --- GERÄTE STEUERUNG & STATUS (Logic & UI) ---
+
+async function toggleDevice(deviceName) {
+    const cardElement = document.getElementById(`${deviceName}-toggle`).closest('.control-card');
+
+    cardElement.classList.add('pending');
+
+    try {
+        await fetch(`/api/IotApi/devices/${deviceName}/toggle`, { method: 'POST' });
+    } catch (error) {
+        console.error(`Error toggling ${deviceName}:`, error);
+        cardElement.classList.remove('pending');
+    }
+}
+
+function updateSingleDevice(deviceState) {
+    const deviceName = deviceState.deviceName.toLowerCase().trim();
+
+    const statusElement = document.getElementById(`${deviceName}-status`);
+    const toggleElement = document.getElementById(`${deviceName}-toggle`);
+
+    const cardElement = toggleElement?.closest('.control-card');
+
+    if (!statusElement || !toggleElement || !cardElement) {
+        console.warn(`Không tìm thấy elements cho thiết bị: ${deviceName}`);
+        return;
+    }
+
+    cardElement.classList.remove('pending');
+
+    if (deviceState.isOn) {
+        statusElement.innerText = 'Đang Bật';
+        statusElement.className = 'status fw-bold text-success';
+    } else {
+        statusElement.innerText = 'Đang Tắt';
+        statusElement.className = 'status fw-bold text-secondary';
+    }
+
+    toggleElement.checked = deviceState.isOn;
+}
+
+async function updateDeviceStates() {
+    try {
+        const response = await fetch('/api/IotApi/devicestates');
+        if (!response.ok) {
+            console.error(`Error fetching device states: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(errorText);
+            return;
+        }
+
+        const devices = await response.json();
+
+        devices.forEach(deviceState => {
+            const deviceName = deviceState.deviceName.toLowerCase().trim();
+            const statusElement = document.getElementById(`${deviceName}-status`);
+            const toggleElement = document.getElementById(`${deviceName}-toggle`);
+
+            if (statusElement && toggleElement) {
+                const cardElement = toggleElement.closest('.control-card');
+                cardElement.classList.remove('pending');
+
+                if (deviceState.isOn) {
+                    statusElement.innerText = 'Đang Bật';
+                    statusElement.className = 'status fw-bold text-success';
+                } else {
+                    statusElement.innerText = 'Đang Tắt';
+                    statusElement.className = 'status fw-bold text-secondary';
+                }
+                toggleElement.checked = deviceState.isOn;
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching device states:", error);
+    }
+}
+
+// --- SENSOR DATEN & CHARTS ---
+
 async function updateLatestData() {
     try {
         const response = await fetch('/api/IotApi/sensordata/latest');
@@ -235,81 +314,7 @@ async function updateDustCo2Chart() {
     }
 }
 
-async function toggleDevice(deviceName) {
-    const cardElement = document.getElementById(`${deviceName}-toggle`).closest('.control-card');
-
-    cardElement.classList.add('pending');
-
-    try {
-        await fetch(`/api/IotApi/devices/${deviceName}/toggle`, { method: 'POST' });
-    } catch (error) {
-        console.error(`Error toggling ${deviceName}:`, error);
-        cardElement.classList.remove('pending');
-    }
-}
-
-async function updateDeviceStates() {
-    try {
-        const response = await fetch('/api/IotApi/devicestates');
-        if (!response.ok) {
-            console.error(`Error fetching device states: ${response.status} ${response.statusText}`);
-            const errorText = await response.text();
-            console.error(errorText);
-            return;
-        }
-
-        const devices = await response.json();
-
-        devices.forEach(deviceState => {
-            const deviceName = deviceState.deviceName.toLowerCase().trim();
-            const statusElement = document.getElementById(`${deviceName}-status`);
-            const toggleElement = document.getElementById(`${deviceName}-toggle`);
-
-            if (statusElement && toggleElement) {
-                const cardElement = toggleElement.closest('.control-card');
-                cardElement.classList.remove('pending');
-
-                if (deviceState.isOn) {
-                    statusElement.innerText = 'Đang Bật';
-                    statusElement.className = 'status fw-bold text-success';
-                } else {
-                    statusElement.innerText = 'Đang Tắt';
-                    statusElement.className = 'status fw-bold text-secondary';
-                }
-                toggleElement.checked = deviceState.isOn;
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching device states:", error);
-    }
-}
-
-
-function updateSingleDevice(deviceState) {
-    const deviceName = deviceState.deviceName.toLowerCase().trim();
-
-    const statusElement = document.getElementById(`${deviceName}-status`);
-    const toggleElement = document.getElementById(`${deviceName}-toggle`);
-
-    const cardElement = toggleElement?.closest('.control-card');
-
-    if (!statusElement || !toggleElement || !cardElement) {
-        console.warn(`Không tìm thấy elements cho thiết bị: ${deviceName}`);
-        return;
-    }
-
-    cardElement.classList.remove('pending');
-
-    if (deviceState.isOn) {
-        statusElement.innerText = 'Đang Bật';
-        statusElement.className = 'status fw-bold text-success';
-    } else {
-        statusElement.innerText = 'Đang Tắt';
-        statusElement.className = 'status fw-bold text-secondary';
-    }
-
-    toggleElement.checked = deviceState.isOn;
-}
+// --- HAUPT-INITIALISIERUNG (Main Entry Point) ---
 
 document.addEventListener('DOMContentLoaded', function() {
 

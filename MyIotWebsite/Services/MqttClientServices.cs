@@ -35,7 +35,7 @@ namespace MyIotWebsite.Services
                     .WithCredentials(MqttUser, MqttPassword) 
                     .Build())
                 .Build();
-
+            
             _mqttClient = new MqttFactory().CreateManagedMqttClient();
             _mqttClient.ApplicationMessageReceivedAsync += OnMqttMessageReceived;
 
@@ -105,19 +105,17 @@ namespace MyIotWebsite.Services
                         await hubContext.Clients.All.SendAsync("ReceiveSensorData", sensorData);
 
                         Console.WriteLine("Sensor data (5 values) saved to DB and pushed via SignalR.");
-
-                        // --- LOGIC CẢNH BÁO MỚI ---
                         try
                         {
-                            if (dust > 500 && co2 > 50)
+                            if (dust > 500 || co2 > 50) 
                             {
                                 await PublishAsync("control/alarm", "alarm_on");
-                                Console.WriteLine("ALARM TRIGGERED: Dust or CO2 exceeded threshold. Sent 'alarm_on'.");
+                                Console.WriteLine($"ALARM ON: Dust({dust}) or CO2({co2}) exceeded threshold.");
                             }
                             else
                             {
                                 await PublishAsync("control/alarm", "alarm_off");
-                                Console.WriteLine("ALARM OFF: Levels are normal. Sent 'alarm_off'.");
+                                Console.WriteLine("ALARM OFF: Levels are normal.");
                             }
                         }
                         catch (Exception ex)
@@ -132,7 +130,6 @@ namespace MyIotWebsite.Services
                 }
                 else if (topic == "status/device")
                 {
-                    // (Giữ nguyên không thay đổi)
                     try
                     {
                         using (JsonDocument doc = JsonDocument.Parse(payload))

@@ -71,39 +71,33 @@ ViewData["Title"] = "Dashboard";
     </div>
 
     <div class="row">
-
-        <div class="col-lg-12 mb-4"> <!-- Đã thay đổi từ col-lg-8 -->
-            <div class="row">
-                <div class="col-lg-6 mb-4">
-                    <div class="dashboard-card"> <div>
-                            <h5 class="d-flex align-items-center mb-3">
-                                <i class="fas fa-chart-line me-2"></i> Dash Board
-                            </h5>
-                            <canvas id="sensorChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-6 mb-4">
-                    <div class="dashboard-card"> <div>
-                            <h5 class="d-flex align-items-center mb-3">
-                                <i class="fas fa-smog me-2"></i> Phân Tích Bụi & CO2
-                            </h5>
-                            <canvas id="dustCo2Chart"></canvas>
-                        </div>
-                    </div>
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card"> <div>
+                    <h5 class="d-flex align-items-center mb-3">
+                        <i class="fas fa-chart-line me-2"></i> Dash Board
+                    </h5>
+                    <canvas id="sensorChart"></canvas>
                 </div>
             </div>
         </div>
 
-    </div> <!-- Đã đóng hàng của biểu đồ -->
+        <div class="col-lg-6 mb-4">
+            <div class="dashboard-card"> <div>
+                    <h5 class="d-flex align-items-center mb-3">
+                        <i class="fas fa-smog me-2"></i> Phân Tích Bụi & CO2
+                    </h5>
+                    <canvas id="dustCo2Chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div class="row"> <!-- Hàng mới cho Bảng Điều Khiển -->
-        <div class="col-lg-12 mb-4"> <!-- Đã thay đổi từ col-lg-4 -->
+    <div class="row">
+        <div class="col-lg-12 mb-4">
             <div class="dashboard-card"> <h5 class="mb-3">Bảng Điều Khiển</h5>
-                <div class="row"> <!-- Thêm row để xếp các control theo chiều ngang -->
-                    <div class="col-md-4"> <!-- Cột cho Quạt -->
-                        <div class="control-card mb-3 mb-md-0"> <!-- Điều chỉnh margin -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="control-card mb-3 mb-md-0">
                             <div class="info">
                                 <span class="icon">💨</span>
                                 <div>
@@ -116,8 +110,8 @@ ViewData["Title"] = "Dashboard";
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4"> <!-- Cột cho Đèn -->
-                        <div class="control-card mb-3 mb-md-0"> <!-- Điều chỉnh margin -->
+                    <div class="col-md-4">
+                        <div class="control-card mb-3 mb-md-0">
                             <div class="info">
                                 <span class="icon">💡</span>
                                 <div>
@@ -130,8 +124,8 @@ ViewData["Title"] = "Dashboard";
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4"> <!-- Cột cho Điều hòa -->
-                        <div class="control-card"> <!-- Xóa mb-3 -->
+                    <div class="col-md-4">
+                        <div class="control-card">
                             <div class="info">
                                 <span class="icon">❄️</span>
                                 <div>
@@ -144,7 +138,7 @@ ViewData["Title"] = "Dashboard";
                             </div>
                         </div>
                     </div>
-                </div> <!-- Đóng inner-row -->
+                </div>
             </div>
         </div>
 
