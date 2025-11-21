@@ -1,3 +1,6 @@
+// ==========================================
+// 1. KHAI BÁO BIẾN & DOM ELEMENTS
+// ==========================================
 const searchInput = document.getElementById('search-input');
 const deviceSelect = document.getElementById('device-select');
 const statusSelect = document.getElementById('status-select');
@@ -5,9 +8,24 @@ const pageSizeSelect = document.getElementById('pagesize-select');
 const searchButton = document.getElementById('search-btn');
 const tableBody = document.getElementById('history-table-body');
 const paginationControls = document.getElementById('pagination-controls');
-const debouncedSearch = debounce(() => loadHistoryData(1),500);
 
 let currentPage = 1;
+
+// ==========================================
+// 2. HÀM TIỆN ÍCH (UTILS & HELPERS)
+// ==========================================
+function debounce(func, delay = 500) {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            func.apply(this, args);
+        }, delay);
+    };
+}
+
+// Biến này phụ thuộc vào hàm debounce nên đặt ngay sau nó
+const debouncedSearch = debounce(() => loadHistoryData(1), 500);
 
 function sanitizeHTML(str) {
     return str.replace(/[&<>"']/g, function(m) {
@@ -19,24 +37,6 @@ function sanitizeHTML(str) {
             "'": '&#39;'
         }[m];
     });
-}
-
-function debounce(func, delay = 500) {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, delay);
-    };
-}
-
-function getDeviceIcon(deviceName) {
-    const name = deviceName.toLowerCase();
-    if (name.includes('fan')) return '<i class="fas fa-fan text-info me-2"></i>';
-    if (name.includes('light') || name.includes('bulb')) return '<i class="fas fa-lightbulb text-warning me-2"></i>';
-    if (name.includes('ac')) return '<i class="fas fa-snowflake text-primary me-2"></i>';
-    return '<i class="fas fa-toggle-on me-2"></i>';
 }
 
 function formatDateTime(isoString) {
@@ -51,45 +51,17 @@ function formatDateTime(isoString) {
     return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
-const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
-// connection.on("ReceiveActionHistory", function (record) {
-//     if (currentPage === 1 && !searchInput.value && deviceSelect.value === 'all' && statusSelect.value === 'all') {
-//         loadHistoryData(1);
-//     }
-// });
-connection.on("ReceiveActionHistory", function (record) {
-    if (currentPage !== 1 || searchInput.value || deviceSelect.value !== 'all' || statusSelect.value !== 'all') {
-        return;
-    }
+function getDeviceIcon(deviceName) {
+    const name = deviceName.toLowerCase();
+    if (name.includes('fan')) return '<i class="fas fa-fan text-info me-2"></i>';
+    if (name.includes('light') || name.includes('bulb')) return '<i class="fas fa-lightbulb text-warning me-2"></i>';
+    if (name.includes('ac')) return '<i class="fas fa-snowflake text-primary me-2"></i>';
+    return '<i class="fas fa-toggle-on me-2"></i>';
+}
 
-    const noDataRow = tableBody.querySelector('td[colspan="4"]');
-    if (noDataRow) {
-        noDataRow.parentElement.remove();
-    }
-
-    const actionBadge = record.isOn
-        ? '<span class="badge bg-success">Bật</span>'
-        : '<span class="badge bg-danger">Tắt</span>';
-    const safeDeviceName = sanitizeHTML(record.deviceName);
-    const icon = getDeviceIcon(safeDeviceName);
-    const formattedDate = formatDateTime(record.timestamp);
-
-    const row = `<tr>
-                    <td>${record.id}</td>
-                    <td>${icon} ${safeDeviceName}</td>
-                    <td>${actionBadge}</td>
-                    <td>${formattedDate}</td>
-                 </tr>`;
-
-    tableBody.insertAdjacentHTML('afterbegin', row);
-
-    const rows = tableBody.querySelectorAll('tr');
-    const pageSize = parseInt(pageSizeSelect.value, 10);
-    if (rows.length > pageSize) {
-        rows[rows.length - 1].remove();
-    }
-});
-
+// ==========================================
+// 3. LOGIC CHÍNH (DATA FETCHING)
+// ==========================================
 async function loadHistoryData(page = 1) {
     currentPage = page;
     tableBody.innerHTML = `<tr><td colspan="4" class="text-center">Đang tải dữ liệu...</td></tr>`;
@@ -125,7 +97,6 @@ async function loadHistoryData(page = 1) {
 
         let rowsHtml = '';
 
-
         paginatedResponse.data.forEach(record => {
             const actionBadge = record.isOn
                 ? '<span class="badge bg-success">Bật</span>'
@@ -152,6 +123,30 @@ async function loadHistoryData(page = 1) {
     }
 }
 
+async function loadDeviceFilters() {
+    try {
+        const response = await fetch('/api/IotApi/devicestates');
+        if (!response.ok) return;
+
+        const devices = await response.json();
+        deviceSelect.innerHTML = '<option value="all" selected>Tất cả</option>';
+
+        const deviceNames = [...new Set(devices.map(d => d.deviceName))];
+
+        deviceNames.forEach(name => {
+            const safeName = sanitizeHTML(name);
+            const capitalizedName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
+            deviceSelect.innerHTML += `<option value="${safeName.toLowerCase()}">${capitalizedName}</option>`;
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi tải danh sách thiết bị:", error);
+    }
+}
+
+// ==========================================
+// 4. LOGIC HIỂN THỊ (UI RENDERING)
+// ==========================================
 function renderPagination(totalPages, currentPage) {
     paginationControls.innerHTML = '';
     if (totalPages <= 1) return;
@@ -194,41 +189,56 @@ function renderPagination(totalPages, currentPage) {
     paginationControls.innerHTML = html;
 }
 
+// ==========================================
+// 5. SIGNALR (REAL-TIME)
+// ==========================================
+const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
+
+connection.on("ReceiveActionHistory", function (record) {
+    if (currentPage !== 1 || searchInput.value || deviceSelect.value !== 'all' || statusSelect.value !== 'all') {
+        return;
+    }
+
+    const noDataRow = tableBody.querySelector('td[colspan="4"]');
+    if (noDataRow) {
+        noDataRow.parentElement.remove();
+    }
+
+    const actionBadge = record.isOn
+        ? '<span class="badge bg-success">Bật</span>'
+        : '<span class="badge bg-danger">Tắt</span>';
+    const safeDeviceName = sanitizeHTML(record.deviceName);
+    const icon = getDeviceIcon(safeDeviceName);
+    const formattedDate = formatDateTime(record.timestamp);
+
+    const row = `<tr>
+                    <td>${record.id}</td>
+                    <td>${icon} ${safeDeviceName}</td>
+                    <td>${actionBadge}</td>
+                    <td>${formattedDate}</td>
+                 </tr>`;
+
+    tableBody.insertAdjacentHTML('afterbegin', row);
+
+    const rows = tableBody.querySelectorAll('tr');
+    const pageSize = parseInt(pageSizeSelect.value, 10);
+    if (rows.length > pageSize) {
+        rows[rows.length - 1].remove();
+    }
+});
+
+// ==========================================
+// 6. GẮN SỰ KIỆN (EVENT LISTENERS)
+// ==========================================
 searchButton.addEventListener('click', () => loadHistoryData(1));
-
-// searchInput.addEventListener('keyup', function(event) {
-//     if (event.key === 'Enter') {
-//         searchButton.click();
-//     }
-// });
-
 searchInput.addEventListener('input', debouncedSearch);
-
 deviceSelect.addEventListener('change', () => loadHistoryData(1));
 statusSelect.addEventListener('change', () => loadHistoryData(1));
 pageSizeSelect.addEventListener('change', () => loadHistoryData(1));
 
-async function loadDeviceFilters() {
-    try {
-        const response = await fetch('/api/IotApi/devicestates');
-        if (!response.ok) return;
-
-        const devices = await response.json();
-        deviceSelect.innerHTML = '<option value="all" selected>Tất cả</option>';
-
-        const deviceNames = [...new Set(devices.map(d => d.deviceName))];
-
-        deviceNames.forEach(name => {
-            const safeName = sanitizeHTML(name);
-            const capitalizedName = safeName.charAt(0).toUpperCase() + safeName.slice(1);
-            deviceSelect.innerHTML += `<option value="${safeName.toLowerCase()}">${capitalizedName}</option>`;
-        });
-
-    } catch (error) {
-        console.error("Lỗi khi tải danh sách thiết bị:", error);
-    }
-}
-
+// ==========================================
+// 7. KHỞI TẠO (INITIALIZATION)
+// ==========================================
 async function start() {
     try {
         await connection.start();
@@ -244,4 +254,5 @@ async function start() {
         setTimeout(start, 5000);
     }
 };
+
 start();

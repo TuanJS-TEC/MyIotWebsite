@@ -12,12 +12,12 @@ namespace MyIotWebsite.Services
 {
     public class MqttClientService : IHostedService
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IHubContext<SensorHub> _hubContext;
+        private readonly IServiceProvider _serviceProvider; //Eine Datenbank-Session erstellen
+        private readonly IHubContext<SensorHub> _hubContext; 
         private readonly IManagedMqttClient _mqttClient;
         private readonly ManagedMqttClientOptions _mqttOptions; 
         // Thông tin MQTT Broker
-        private const string MqttServer = "192.168.0.107";
+        private const string MqttServer = "172.20.10.4";
         private const int MqttPort = 1883;
         private const string MqttUser = "HoangMinhTuan";
         private const string MqttPassword = "123";
@@ -139,22 +139,31 @@ namespace MyIotWebsite.Services
                             if (root.TryGetProperty("deviceName", out JsonElement deviceNameElement) &&
                                 root.TryGetProperty("isOn", out JsonElement isOnElement))
                             {
-                                string deviceName = deviceNameElement.GetString();
+                                string rawName = deviceNameElement.GetString();
                                 bool isOn = isOnElement.GetBoolean();
 
-                                if (!string.IsNullOrEmpty(deviceName))
+                                if (!string.IsNullOrEmpty(rawName))
                                 {
+                                    string normalizedName = rawName.ToLower().Trim();
+
+                                    if (normalizedName == "bulb") 
+                                    {
+                                        normalizedName = "light";
+                                    }
+                                    // --------------------------------------
+
                                     var newAction = new ActionHistory
                                     {
-                                        DeviceName = deviceName,
+                                        DeviceName = normalizedName, 
                                         IsOn = isOn,
                                         Timestamp = DateTime.UtcNow
                                     };
 
                                     dbContext.ActionHistories.Add(newAction);
                                     await dbContext.SaveChangesAsync();
+        
                                     await hubContext.Clients.All.SendAsync("ReceiveActionHistory", newAction);
-                                    Console.WriteLine("Device status feedback saved to DB and pushed via SignalR.");
+                                    Console.WriteLine($"Device status saved: {normalizedName} is {(isOn ? "ON" : "OFF")}");
                                 }
                             }
                         }

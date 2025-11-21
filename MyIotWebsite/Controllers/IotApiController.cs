@@ -64,99 +64,122 @@ namespace MyIotWebsite.Controllers
         {
             var query = _context.SensorData.AsQueryable();
             // TEIL 1: DATENFILTERUNG (FILTERING)
-            if (!string.IsNullOrEmpty(searchTerm))
+            if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                if (searchType == "ALL")
+                searchTerm = searchTerm.Trim(); 
+
+                string[] formats = {
+                    "d/M/yyyy HH:mm:ss", "d/M/yyyy HH:mm", "d/M/yyyy HH",
+                    "d/M/yy HH:mm:ss", "d/M/yy HH:mm", "d/M/yy HH",
+                    "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy", "HH d/M/yyyy", 
+                    "d/M/yy", "d/M/yyyy", 
+                    "yyyy-MM-dd", "yyyy-MM-dd HH", 
+                    "HH:mm:ss", "HH:mm"
+                };
+
+                if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 {
-                    string[] formats = {
-                        "d/M/yyyy HH:mm:ss", "d/M/yyyy HH:mm", "d/M/yyyy HH",
-                        "d/M/yy HH:mm:ss", "d/M/yy HH:mm", "d/M/yy HH",
-                        "HH:mm:ss d/M/yyyy", "HH:mm d/M/yyyy", "HH d/M/yyyy", 
-                        "d/M/yy", "d/M/yyyy", 
-                        "yyyy-MM-dd", "yyyy-MM-dd HH", 
-                        "HH:mm:ss", "HH:mm"
-                    };
-                    
-                    if (DateTime.TryParseExact(searchTerm, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
-                    {
-                        DateTime searchDate = !searchTerm.Contains('/') && !searchTerm.Contains('-') 
-                            ? DateTime.Today.Add(parsedDate.TimeOfDay) 
-                            : parsedDate;
-            
-                        DateTime localSearchDate = DateTime.SpecifyKind(searchDate, DateTimeKind.Local);
-                
-                        DateTime startDateUtc, endDateUtc;
-                        var colonCount = searchTerm.Count(c => c == ':');
-                        if (colonCount == 2) 
-                        {
-                            startDateUtc = localSearchDate.ToUniversalTime();
-                            endDateUtc = startDateUtc.AddSeconds(1);
-                        }
-                        else if (colonCount == 1) 
-                        {
-                            var searchMinuteUtc = localSearchDate.ToUniversalTime();
-                            startDateUtc = new DateTime(searchMinuteUtc.Year, searchMinuteUtc.Month, searchMinuteUtc.Day, 
-                                searchMinuteUtc.Hour, searchMinuteUtc.Minute, 0, DateTimeKind.Utc);
-                            endDateUtc = startDateUtc.AddMinutes(1);
-                        }
-                        else if (colonCount == 0 && (searchTerm.Contains('/') || searchTerm.Contains('-')) && searchTerm.Contains(' '))
-                        {
-                            var searchHourUtc = localSearchDate.ToUniversalTime();
-                            startDateUtc = new DateTime(searchHourUtc.Year, searchHourUtc.Month, searchHourUtc.Day, 
-                                searchHourUtc.Hour, 0, 0, DateTimeKind.Utc);
-                            endDateUtc = startDateUtc.AddHours(1);
-                        }
-                        else 
-                        {
-                            var localStartDate = new DateTime(localSearchDate.Year, localSearchDate.Month, localSearchDate.Day, 0, 0, 0, DateTimeKind.Local);
-                            var localEndDate = localStartDate.AddDays(1);
-                            startDateUtc = localStartDate.ToUniversalTime();
-                            endDateUtc = localEndDate.ToUniversalTime();
-                        }
+                    DateTime searchDate = !searchTerm.Contains('/') && !searchTerm.Contains('-') 
+                        ? DateTime.Today.Add(parsedDate.TimeOfDay) 
+                        : parsedDate;
 
-                        query = query.Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc);
-                    }
-                    else if (double.TryParse(searchTerm, NumberStyles.Any, CultureInfo.InvariantCulture,
-                                 out var numericValue))
+                    DateTime localSearchDate = DateTime.SpecifyKind(searchDate, DateTimeKind.Local);
+                    DateTime startDateUtc, endDateUtc;
+        
+                    var colonCount = searchTerm.Count(c => c == ':');
+        
+                    if (colonCount == 2) 
                     {
-                        double tolerance = 0.1; 
-                        long.TryParse(searchTerm, out var longId);
-
-                        query = query.Where(s => 
-                            (longId != 0 && s.Id == longId) || 
-                            (s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance) ||
-                            (s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance) ||
-                            (s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance) ||
-                            (s.Dust >= numericValue - tolerance && s.Dust <= numericValue + tolerance) ||
-                            (s.Co2 >= numericValue - tolerance && s.Co2 <= numericValue + tolerance)  
-                        );
+                        startDateUtc = localSearchDate.ToUniversalTime();
+                        endDateUtc = startDateUtc.AddSeconds(1);
                     }
+                    else if (colonCount == 1) 
+                    {
+                        var searchMinuteUtc = localSearchDate.ToUniversalTime();
+                        startDateUtc = new DateTime(searchMinuteUtc.Year, searchMinuteUtc.Month, searchMinuteUtc.Day, 
+                            searchMinuteUtc.Hour, searchMinuteUtc.Minute, 0, DateTimeKind.Utc);
+                        endDateUtc = startDateUtc.AddMinutes(1);
+                    }
+                    else if (colonCount == 0 && (searchTerm.Contains('/') || searchTerm.Contains('-')) && searchTerm.Contains(' '))
+                    {
+                        var searchHourUtc = localSearchDate.ToUniversalTime();
+                        startDateUtc = new DateTime(searchHourUtc.Year, searchHourUtc.Month, searchHourUtc.Day, 
+                            searchHourUtc.Hour, 0, 0, DateTimeKind.Utc);
+                        endDateUtc = startDateUtc.AddHours(1);
+                    }
+                    else 
+                    {
+                        var localStartDate = new DateTime(localSearchDate.Year, localSearchDate.Month, localSearchDate.Day, 0, 0, 0, DateTimeKind.Local);
+                        var localEndDate = localStartDate.AddDays(1);
+                        startDateUtc = localStartDate.ToUniversalTime();
+                        endDateUtc = localEndDate.ToUniversalTime();
+                    }
+
+                    query = query.Where(s => s.Timestamp >= startDateUtc && s.Timestamp < endDateUtc);
                 }
                 else 
                 {
-                    if (double.TryParse(searchTerm, NumberStyles.Any, CultureInfo.InvariantCulture, out var numericValue))
+                    string normalizedTerm = searchTerm.Replace(',', '.');
+
+                    if (double.TryParse(normalizedTerm, NumberStyles.Any, CultureInfo.InvariantCulture, out var numericValue))
                     {
-                        double epsilon = 0.05; 
-                        switch (searchType)
+                        double tolerance;
+                        if (normalizedTerm.Contains('.'))
                         {
-                            case "temperature": 
-                                query = query.Where(s => Math.Abs(s.Temperature - numericValue) <= epsilon); 
-                                break;
-                            case "humidity": 
-                                query = query.Where(s => Math.Abs(s.Humidity - numericValue) <= epsilon); 
-                                break;
-                            case "light": 
-                                query = query.Where(s => s.Light == numericValue); 
-                                break;
-                            case "dust": 
-                                query = query.Where(s => Math.Abs(s.Dust - numericValue) <= epsilon); 
-                                break;
-                            case "co2": 
-                                query = query.Where(s => Math.Abs(s.Co2 - numericValue) <= epsilon); 
-                                break;
-                            default: 
-                                query = query.Where(s => false); 
-                                break;
+                            int decimalPlaces = normalizedTerm.Length - normalizedTerm.IndexOf('.') - 1;
+                            tolerance = 0.5 * Math.Pow(10, -decimalPlaces);
+                        }
+                        else
+                        {
+                            tolerance = 0.0001;
+                        }
+                        if (tolerance < 0.00001) tolerance = 0.00001;
+
+                        if (searchType == "ALL")
+                        {
+                            bool isInteger = long.TryParse(searchTerm, out var longId);
+
+                            query = query.Where(s => 
+                                (isInteger && s.Id == longId) || 
+                                (s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance) ||
+                                (s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance) ||
+                                (s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance) ||
+                                (s.Dust >= numericValue - tolerance && s.Dust <= numericValue + tolerance) ||
+                                (s.Co2 >= numericValue - tolerance && s.Co2 <= numericValue + tolerance)
+                            );
+                        }
+                        else 
+                        {
+                            switch (searchType.ToLower()) 
+                            {
+                                case "temperature": 
+                                case "nhiệt độ": 
+                                    query = query.Where(s => s.Temperature >= numericValue - tolerance && s.Temperature <= numericValue + tolerance); 
+                                    break;
+
+                                case "humidity":
+                                case "độ ẩm":
+                                    query = query.Where(s => s.Humidity >= numericValue - tolerance && s.Humidity <= numericValue + tolerance); 
+                                    break;
+
+                                case "light": 
+                                case "ánh sáng":
+                                    query = query.Where(s => s.Light >= numericValue - tolerance && s.Light <= numericValue + tolerance); 
+                                    break;
+
+                                case "dust": 
+                                case "bụi":
+                                    query = query.Where(s => s.Dust >= numericValue - tolerance && s.Dust <= numericValue + tolerance); 
+                                    break;
+
+                                case "co2": 
+                                    query = query.Where(s => s.Co2 >= numericValue - tolerance && s.Co2 <= numericValue + tolerance); 
+                                    break;
+
+                                default: 
+                                    query = query.Where(s => false); 
+                                    break;
+                            }
                         }
                     }
                     else
@@ -211,27 +234,15 @@ namespace MyIotWebsite.Controllers
         {
             try
             {
-                var deviceNames = await _context.ActionHistories
-                    .Select(h => h.DeviceName)
-                    .Distinct()
-                    .ToListAsync();
-        
-                var latestStates = new List<ActionHistory>();
-        
-                foreach (var name in deviceNames)
-                {
-                    var latest = await _context.ActionHistories
-                        .Where(h => h.DeviceName == name)
-                        .OrderByDescending(h => h.Timestamp)
-                        .FirstOrDefaultAsync();
-            
-                    if (latest != null)
-                    {
-                        latestStates.Add(latest);
-                    }
-                }
-        
-                return Ok(latestStates.OrderBy(s => s.DeviceName));
+                var allHistory = await _context.ActionHistories.ToListAsync();
+
+                var latestStates = allHistory
+                    .GroupBy(h => h.DeviceName.ToLower().Trim()) 
+                    .Select(g => g.OrderByDescending(h => h.Timestamp).First())
+                    .OrderBy(s => s.DeviceName)
+                    .ToList();
+
+                return Ok(latestStates);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // ==========================================
+    // 1. KHAI BÁO BIẾN (DOM ELEMENTS & STATE)
+    // ==========================================
     const searchInput = document.getElementById('search-input');
     const searchTypeSelect = document.getElementById('search-type-select');
     const pageSizeSelect = document.getElementById('pagesize-select');
@@ -15,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentSortBy = 'timestamp';
     let currentSortOrder = 'desc';
 
+    // ==========================================
+    // 2. HÀM TIỆN ÍCH (UTILS & HELPERS)
+    // ==========================================
     function debounce(func, delay = 500) {
         let timeoutId;
         return (...args) => {
@@ -24,7 +30,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }, delay);
         };
     }
-    const debouncedLoadData = debounce(() => loadSensorData(1), 500);
 
     function formatDateTime(dateString) {
         const date = new Date(dateString);
@@ -61,6 +66,19 @@ document.addEventListener('DOMContentLoaded', function () {
         return '';
     }
 
+    function updateSortUI() {
+        tableHeaders.forEach(header => {
+            const sortBy = header.getAttribute('data-sortby');
+            header.classList.remove('sorted', 'asc', 'desc');
+            if (sortBy === currentSortBy) {
+                header.classList.add('sorted', currentSortOrder);
+            }
+        });
+    }
+
+    // ==========================================
+    // 3. LOGIC CHÍNH (API & RENDERING)
+    // ==========================================
     async function loadSensorData(page = 1) {
         currentPage = page;
         tableBody.innerHTML = `<tr><td colspan="7" class="text-center">Đang tải dữ liệu...</td></tr>`;
@@ -81,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!response.ok){
                 if (response.status === 404) {
                     const errorMessage = await response.text();
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger p-3">${errorMessage}</td></tr>`; // Cập nhật colspan
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger p-3">${errorMessage}</td></tr>`;
                 } else {
                     throw new Error(`Lỗi máy chủ hoặc API: ${response.status}`);
                 }
@@ -96,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const message = searchInput.value
                     ? "Không tồn tại bất kỳ giá trị nào như bạn yêu cầu."
                     : "Chưa có dữ liệu nào.";
-                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-warning p-3">${message}</td></tr>`; // Cập nhật colspan
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-warning p-3">${message}</td></tr>`;
                 paginationControls.innerHTML = '';
                 return;
             }
@@ -104,7 +122,6 @@ document.addEventListener('DOMContentLoaded', function () {
             paginatedResponse.data.forEach(record => {
                 const row = document.createElement('tr');
 
-                // --- CẬP NHẬT LOGIC VẼ BẢNG ---
                 row.insertCell(0).textContent = record.id;
 
                 const tempCell = row.insertCell(1);
@@ -126,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 co2Cell.className = getValueClass('co2', record.co2);
 
                 row.insertCell(6).textContent = formatDateTime(record.timestamp);
-                // --- KẾT THÚC CẬP NHẬT ---
 
                 tableBody.appendChild(row);
             });
@@ -136,6 +152,8 @@ document.addEventListener('DOMContentLoaded', function () {
             tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger p-3">Không thể tải dữ liệu. Vui lòng thử lại.</td></tr>';
         }
     }
+
+    const debouncedLoadData = debounce(() => loadSensorData(1), 500);
 
     function renderPagination(totalPages, currentPage) {
         paginationControls.innerHTML = '';
@@ -208,111 +226,11 @@ document.addEventListener('DOMContentLoaded', function () {
         paginationControls.appendChild(createPageItem(currentPage + 1, 'Next', currentPage === totalPages));
     }
 
-    function updateSortUI() {
-        tableHeaders.forEach(header => {
-            const sortBy = header.getAttribute('data-sortby');
-            header.classList.remove('sorted', 'asc', 'desc');
-            if (sortBy === currentSortBy) {
-                header.classList.add('sorted', currentSortOrder);
-            }
-        });
-    }
-
-    // --- GẮN SỰ KIỆN CHO CÁC NÚT SẮP XẾP ---
-    tableHeaders.forEach(header => {
-        header.addEventListener('click', () => {
-            const sortBy = header.getAttribute('data-sortby');
-            if (!sortBy) return;
-
-            if (currentSortBy === sortBy) {
-                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSortBy = sortBy;
-                currentSortOrder = (sortBy === 'timestamp') ? 'desc' : 'asc';
-            }
-            updateSortUI();
-            loadSensorData(1);
-        });
-    });
-
-    // --- GẮN CÁC SỰ KIỆN KHÁC ---
-    searchButton.addEventListener('click', () => loadSensorData(1));
-    pageSizeSelect.addEventListener('change', () => loadSensorData(1));
-    searchTypeSelect.addEventListener('change', () => loadSensorData(1));
-    searchInput.addEventListener('input', debouncedLoadData);
-    searchInput.addEventListener('keyup', (event) => {
-        if (event.key === 'Enter') {
-            loadSensorData(1);
-        }
-    });
-
-    deleteButton.addEventListener('click', async () => {
-        const startDate = deleteStartDateInput.value;
-        const endDate = deleteEndDateInput.value;
-
-        if (!startDate || !endDate) {
-            alert("Vui lòng chọn cả 'Từ ngày' và 'Đến ngày'.");
-            return;
-        }
-
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (startDateObj > endDateObj) {
-            alert("Giá trị 'Từ ngày' phải trước hoặc bằng 'Đến ngày'.");
-            return;
-        }
-
-        if (endDateObj >= today) {
-            alert("Giá trị 'Đến ngày' phải là một ngày trong quá khứ. Không thể xóa dữ liệu của ngày hôm nay.");
-            return;
-        }
-
-        const friendlyStart = formatFriendlyDate(startDate);
-        const friendlyEnd = formatFriendlyDate(endDate);
-
-        if (!confirm(`BẠN CÓ CHẮC CHẮN MUỐN XÓA?\n\nTất cả dữ liệu từ ${friendlyStart} đến ${friendlyEnd} sẽ bị xóa vĩnh viễn.`)) {
-            return;
-        }
-        if (!confirm(`HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.\n\nXác nhận lần cuối: Xóa dữ liệu từ ${friendlyStart} đến ${friendlyEnd}?`)) {
-            return;
-        }
-
-        deleteButton.disabled = true;
-        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Đang xóa...';
-
-        try {
-            const params = new URLSearchParams({
-                startDate: startDate,
-                endDate: endDate
-            });
-            const apiUrl = `/api/IotApi/sensordata/delete-old?${params.toString()}`;
-
-            const response = await fetch(apiUrl, { method: 'DELETE' });
-            const result = await response.json(); // Luôn đọc json để lấy message
-
-            if (!response.ok) {
-                throw new Error(result.message || 'Lỗi không xác định từ máy chủ.');
-            }
-
-            alert(result.message);
-
-            await loadSensorData(1);
-
-        } catch (error) {
-            console.error("Lỗi khi xóa dữ liệu:", error);
-            alert(`Không thể xóa dữ liệu: ${error.message}`);
-        } finally {
-            deleteButton.disabled = false;
-            deleteButton.innerHTML = '<i class="fas fa-trash me-1"></i> Xóa Dữ liệu';
-            deleteStartDateInput.value = '';
-            deleteEndDateInput.value = '';
-        }
-    });
-
+    // ==========================================
+    // 4. SIGNALR (REAL-TIME UPDATES)
+    // ==========================================
     const connection = new signalR.HubConnectionBuilder().withUrl("/sensorHub").build();
+
     connection.on("ReceiveSensorData", function (record) {
         if (currentPage === 1 && !searchInput.value && currentSortBy === 'timestamp' && currentSortOrder === 'desc') {
             const existingRows = tableBody.getElementsByTagName('tr');
@@ -342,6 +260,53 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // ==========================================
+    // 5. GẮN SỰ KIỆN (EVENT LISTENERS)
+    // ==========================================
+
+    // Search & Filter Events
+    searchButton.addEventListener('click', () => loadSensorData(1));
+    pageSizeSelect.addEventListener('change', () => loadSensorData(1));
+    searchTypeSelect.addEventListener('change', () => loadSensorData(1));
+    searchInput.addEventListener('input', debouncedLoadData);
+    searchInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+            loadSensorData(1);
+        }
+    });
+
+    // Sort Events
+    tableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortBy = header.getAttribute('data-sortby');
+            if (!sortBy) return;
+
+            if (currentSortBy === sortBy) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortBy = sortBy;
+                currentSortOrder = (sortBy === 'timestamp') ? 'desc' : 'asc';
+            }
+            updateSortUI();
+            loadSensorData(1);
+        });
+    });
+
+    deleteButton.addEventListener('click', () => {
+        const startDate = deleteStartDateInput.value;
+        const endDate = deleteEndDateInput.value;
+
+        if (!startDate || !endDate) {
+            alert("Vui lòng chọn cả 'Từ ngày' và 'Đến ngày'.");
+            return;
+        }
+        alert("Chức năng này đã bị tắt. Dữ liệu được bảo toàn.");
+        deleteStartDateInput.value = '';
+        deleteEndDateInput.value = '';
+    });
+    // ==========================================
+    // 6. KHỞI TẠO (INITIALIZATION)
+    // ==========================================
     async function start() {
         try {
             await connection.start();
