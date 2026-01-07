@@ -1,0 +1,48 @@
+﻿services:
+  website:
+    image: myiotwebsite-image
+    container_name: myiot-website
+    build:
+      context: ./MyIotWebsite
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=db;Port=5432;Database=MyIotDb;User Id=myuser;Password=mypassword;
+      - MqttSettings__BrokerAddress=mqtt
+      - MqttSettings__Port=1883
+    depends_on:
+      - db
+      - mqtt
+    restart: always
+
+  db:
+    image: postgres:15-alpine
+    container_name: myiot-postgres
+    environment:
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=MyIotDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: myiot-mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: always
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+  mosquitto_log:

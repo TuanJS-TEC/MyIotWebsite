@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="2ea6dfbe-9c55-4cd0-b3e3-0ce992cb9913" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/bin/Debug/net8.0/MyIotWebsite" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/bin/Debug/net8.0/MyIotWebsite" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/bin/Debug/net8.0/MyIotWebsite.dll" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/bin/Debug/net8.0/MyIotWebsite.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/bin/Debug/net8.0/MyIotWebsite.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/bin/Debug/net8.0/MyIotWebsite.pdb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.AssemblyInfo.cs" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.AssemblyInfo.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.AssemblyInfoInputs.cache" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.AssemblyInfoInputs.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.csproj.CoreCompileInputs.cache" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.csproj.CoreCompileInputs.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.dll" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.pdb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.sourcelink.json" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/MyIotWebsite.sourcelink.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/apphost" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/apphost" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/ref/MyIotWebsite.dll" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/ref/MyIotWebsite.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/refint/MyIotWebsite.dll" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/Debug/net8.0/refint/MyIotWebsite.dll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/MyIotWebsite.csproj.nuget.dgspec.json" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/MyIotWebsite.csproj.nuget.dgspec.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/project.assets.json" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/project.assets.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/project.nuget.cache" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/project.nuget.cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/project.packagespec.json" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/project.packagespec.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/rider.project.model.nuget.info" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/rider.project.model.nuget.info" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/MyIotWebsite/obj/rider.project.restore.info" beforeDir="false" afterPath="$PROJECT_DIR$/MyIotWebsite/obj/rider.project.restore.info" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "TuanJS-TEC"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/TuanJS-TEC/MyIotWebsite.git",
+    "accountId": "7ffb55fb-ea55-4f33-8f95-153b45f1c163"
+  }
+}]]></component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 0
+}]]></component>
+  <component name="ProjectId" id="363KB0s0YQktBZiB26cgqD39Hyw" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/minhtuansfile/HoangTuan_Code/MyIotWebsite",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-WS-252.28238.10" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2ea6dfbe-9c55-4cd0-b3e3-0ce992cb9913" name="Changes" comment="" />
+      <created>1764229675360</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1764229675360</updated>
+      <workItem from="1764229676400" duration="31000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
